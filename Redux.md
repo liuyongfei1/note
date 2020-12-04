@@ -131,7 +131,7 @@
 
 ## 三. 工作流程
 
-<img src="Redux.assets/image-20201204232951991.png" alt="image-20201204232951991" style="zoom:40%;" />
+<img src="Redux.assets/image-20201205000623792.png" alt="image-20201205000623792" style="zoom:50%;" />
 
 
 
@@ -165,7 +165,7 @@
 
    
 
-   ## 四.实例
+## 四. 实例
 
 看一个完整的实例：
 
@@ -210,7 +210,7 @@ render();
 store.subscribe(render);
 ```
 
-## 四.备注
+## 五. 备注
 
 摘自：
 
