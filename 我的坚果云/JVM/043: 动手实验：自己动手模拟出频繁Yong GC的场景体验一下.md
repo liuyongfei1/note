@@ -18,7 +18,7 @@
 
 上述参数都是基于JDK 1.8版本来设置的，不同的JDK版本对应的参数名称是不太一样的，但是基本意思是类似的。
 
-- 上面"-XX:InitialHeapSize"和"-XX:MaxHeapSize"即使初始堆大小和最大堆大小，为 10MB；
+- 上面"-XX:InitialHeapSize"和"-XX:MaxHeapSize" 即：初始堆大小和最大堆大小，为 10MB；
 
 - -XX:NewSize 和 -XX:MaxNewSize是初始新生代大小和最大新生代大小；
 - -XX:PretenureSizeThreshold 指定了大对象阈值是 10MB。
