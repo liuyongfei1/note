@@ -132,6 +132,112 @@ Elastic的分词器称为 [analyzer](https://www.elastic.co/guide/en/elasticsear
 - search_analyzer是搜索词的分词器；
 - ik_max_word是ik提供的，可以对文本进行最大数量的分词。
 
+## 数据操作
+
+新增记录
+
+查看记录
+
+删除记录
+
+更新记录
+
+## 数据查询
+
+### 返回所有记录
+
+使用get方式，直接请求 /Index/Type/_search，就会返回所有记录：
+
+```bash
+$ curl 'localhost:9200/accounts/person/_search'
+{
+  "took":2,
+  "timed_out":false,
+  "_shards":{"total":5,"successful":5,"failed":0},
+  "hits":{
+    "total":2,
+    "max_score":1.0,
+    "hits":[
+      {
+        "_index":"accounts",
+        "_type":"person",
+        "_id":"AV3qGfrC6jMbsbXb6k1p",
+        "_score":1.0,
+        "_source": {
+          "user": "李四",
+          "title": "工程师",
+          "desc": "系统管理"
+        }
+      },
+      {
+        "_index":"accounts",
+        "_type":"person",
+        "_id":"1",
+        "_score":1.0,
+        "_source": {
+          "user" : "张三",
+          "title" : "工程师",
+          "desc" : "数据库管理，软件开发"
+        }
+      }
+    ]
+  }
+}
+```
+
+### 全文搜索
+
+Elastic的查询非常特别，使用自己的查询语法，要求get请求带有数据体：
+
+```bash
+curl 'localhost:9200/accounts/person/_search' -d '
+   {
+      "query": {"match" : {"desc" : "软件"}}
+   }
+'
+```
+
+上面代码是使用 [Match 查询](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/query-dsl-match-query.html)，指定的匹配条件是：desc字段里包含"软件这个分词"，返回结果如下：
+
+```json
+{
+  "took":3,
+  "timed_out":false,
+  "_shards":{"total":5,"successful":5,"failed":0},
+  "hits":{
+    "total":1,
+    "max_score":0.28582606,
+    "hits":[
+      {
+        "_index":"accounts",
+        "_type":"person",
+        "_id":"1",
+        "_score":0.28582606,
+        "_source": {
+          "user" : "张三",
+          "title" : "工程师",
+          "desc" : "数据库管理，软件开发"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### 逻辑运算
+
+如果有多个搜索关键字，Elastic认为它们是"or"关系：
+
+```bash
+curl 'localhost:9200/accounts/person/_search' -d '
+	{
+		"query": {"match": {"desc": "软件 系统"}}
+	}
+'
+```
+
+上面代码搜索的是"软件or系统"。
+
 
 
  	
