@@ -238,6 +238,51 @@ curl 'localhost:9200/accounts/person/_search' -d '
 
 上面代码搜索的是"软件or系统"。
 
+## 常常遇见的问题
+
+### 搜索时间过长
+
+通常，当节点收到搜索请求时，会将该请求传达给索引中每个分片的副本。
+
+自定义路由允许将相关数据存储在相同的分片上，以便您只需搜索单个分片来满足查询。
+
+例如：
+
+```bash
+curl  -XPUT "localhost:9200/blog_index" -d '
+	"mappings": {
+    "blogger": {
+      "_routing": {
+        "required": true 
+      }
+    }
+  }
+'
+```
+
+当您准备索引与blogger1相关的文档时，请指定路由值：
+
+```bash
+curl -XPUT "localhost:9200/blog_index/blogger/1?routing=blogger1" '{
+	"comment": "blogger1 made this cool comment"
+}'
+```
+
+现在，为了搜索blogger1的注释，您需要记住在查询中指定路由值，如下所示：
+
+```bash
+curl -XGET "localhost:9200/blog_index/_search?routing=blogger1" -d '
+{
+  "query": {
+    "match": {
+      "comment": {
+        "query": "cool comment"
+      }
+    }
+  }
+}'
+```
+
 
 
  	
