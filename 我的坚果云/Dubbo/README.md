@@ -39,3 +39,15 @@ https://segmentfault.com/a/1190000019896723
 <img src="README.assets/image-20210630225058264.png" alt="image-20210630225058264" style="zoom:50%;" />
 
 <img src="README.assets/image-20210630225004862.png" alt="image-20210630225004862" style="zoom:50%;" />
+
+
+
+### dubbo在什么时候调用了netty
+
+阿里分布式框架Dubbo的RPC框架使用Dubbo协议进行节点通信，Dubbo协议默认使用Netty做为基础通信组件，用于实现各节点之间的内部通信。
+
+1. dubbo的ServiceBean implement ApplicationListener；
+2. 在spring容器启动的时候，调用了ServiceBean的onApplicationEvent方法，在这里创建了NettyBean。
+3. 启动后就可以通过netty来监听端口号并接收消息；
+4. 接收到消息后再调用相应的DubboHandler，解析消息；
+5. 最终找到需要的Service，再通过反射来invoker。
