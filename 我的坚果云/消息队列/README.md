@@ -6,3 +6,16 @@
 
 在电商系统第二阶段不会对MQ做过多深入的讲解，建议去看 **互联网Java工程师面试突击训练第一季**。
 
+### RabbitMQ
+
+项目中用的是哪个版本的？
+
+### Spring Cloud Stream
+
+Spring Cloud Stream官方的说法是一个构建消息驱动服务的框架。我们可以这么理解，这个Spring Cloud Stream封装了mq的玩法，统一了模型，然后屏蔽了各个消息中间件的不同，降低了我们的学习成本，不过目前只支持RabbitMQ和Kafka。
+
+我们可以看一下Spring Cloud Stream的架构图：
+
+<img src="README.assets/image-20210710155902961.png" alt="image-20210710155902961" style="zoom:50%;" />
+
+从上往下看，我们的应用程序，也就是spring core，通过input和output这两种channel与binder进行交互，binder（绑定器对象）屏蔽了咱们消息中间件产品的差异。
