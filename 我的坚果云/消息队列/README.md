@@ -16,6 +16,6 @@ Spring Cloud Stream官方的说法是一个构建消息驱动服务的框架。�
 
 我们可以看一下Spring Cloud Stream的架构图：
 
-<img src="README.assets/image-20210710155902961.png" alt="image-20210710155902961" style="zoom:50%;" />
+<img src="README.assets/image-20210711190326552.png" alt="image-20210711190326552" style="zoom:50%;" />
 
 从上往下看，我们的应用程序，也就是spring core，通过input和output这两种channel与binder进行交互，binder（绑定器对象）屏蔽了咱们消息中间件产品的差异。
