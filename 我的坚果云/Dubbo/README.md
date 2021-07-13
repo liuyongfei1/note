@@ -36,9 +36,7 @@ https://segmentfault.com/a/1190000019896723
 
 2. 一个服务调用另外一个服务，就跟调用本地的一个方法一样。
 
-<img src="README.assets/image-20210630225058264.png" alt="image-20210630225058264" style="zoom:50%;" />
-
-<img src="README.assets/image-20210630225004862.png" alt="image-20210630225004862" style="zoom:50%;" />
+<img src="README.assets/image-20210630225058264.png" alt="image-20210630225058264" style="zoom:50%;"/>
 
 
 

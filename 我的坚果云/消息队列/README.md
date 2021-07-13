@@ -14,8 +14,19 @@
 
 Spring Cloud Stream官方的说法是一个构建消息驱动服务的框架。我们可以这么理解，这个Spring Cloud Stream封装了mq的玩法，统一了模型，然后屏蔽了各个消息中间件的不同，降低了我们的学习成本，不过目前只支持RabbitMQ和Kafka。
 
-我们可以看一下Spring Cloud Stream的架构图：
+我们可以看一下Spring Cloud Stream的架构图如下：
 
-<img src="README.assets/image-20210711190326552.png" alt="image-20210711190326552" style="zoom:50%;" />
+<img src="README.assets/image-20210713220556971.png" alt="image-20210713220556971" style="zoom:30%;" />
 
 从上往下看，我们的应用程序，也就是spring core，通过input和output这两种channel与binder进行交互，binder（绑定器对象）屏蔽了咱们消息中间件产品的差异。
+
+Spring Cloud Stream依赖：
+
+```xml
+<!--spring cloud stream 依赖(rabbit)-->
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
+</dependency>
+```
+
