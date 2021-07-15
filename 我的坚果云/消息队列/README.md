@@ -18,6 +18,8 @@ Spring Cloud Stream官方的说法是一个构建消息驱动服务的框架。�
 
 <img src="README.assets/image-20210713220556971.png" alt="image-20210713220556971" style="zoom:30%;" />
 
+
+
 从上往下看，我们的应用程序，也就是spring core，通过input和output这两种channel与binder进行交互，binder（绑定器对象）屏蔽了咱们消息中间件产品的差异。
 
 Spring Cloud Stream依赖：
@@ -30,3 +32,11 @@ Spring Cloud Stream依赖：
 </dependency>
 ```
 
+#### 消费组
+
+这里有个问题需要注意一下：
+
+在 application.yml中加入消费组的原因是：
+
+1. 如果你不设置这个消费组，如果ServiceA启动了两台机器，每条消息都会推送给这两台机器；
+2. 如果你将ServiceA所有机器的消费组都设置为一个，那么就是在各台机器之间round robin轮询发送消息。
