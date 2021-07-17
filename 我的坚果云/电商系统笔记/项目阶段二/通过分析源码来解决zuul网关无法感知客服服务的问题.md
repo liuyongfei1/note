@@ -8,6 +8,8 @@
 
 ribbon从eureka里获取service list的代码
 
-看spring-cloud-netfix-eureka-client 工程里的
+看spring-cloud-netflix-eureka-client 工程里的
 
 DomainExtractingServerList.java => DiscoveryEnableNIWSServerList.java
+
+DiscoveryClient.java里的 localRegionApps
