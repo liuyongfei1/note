@@ -6,7 +6,7 @@
 
 源码级别定位来解决这个问题。
 
-zuul是依赖ribbon，ribbon感知每个服务的server list，实际上是通过eureka client来的。
+zuul是依赖ribbon，ribbon感知服务的server list，实际上是通过eureka client（com.netflix.eureka.eureka-client jar包代码）来的。
 
 我们找一下ribbon整合eureka获取server list的代码，打上断点来看一下。
 
@@ -55,7 +55,7 @@ key为 instance name转化为大写，value存了每个 instance的信息：
 getInstancesByVirtualHostName(vipAddress)
 ```
 
-Application.java里：
+Application.java（com.netflix.eureka.eureka-client）jar里：
 
 ```java
 public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
