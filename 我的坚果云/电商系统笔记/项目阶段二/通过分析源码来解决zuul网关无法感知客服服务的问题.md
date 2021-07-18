@@ -73,3 +73,7 @@ public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) 
 原来是客服服务传过来的 instacne name是 "eshop-custommer"，单次拼错了，应该是 "eshop-customer"，
 
 所以在shuffleVirtualHostNameMap里找不到。=》 从现象上看 zuul网关就一直发现不了 客服服务。
+
+
+
+postman里请求的url地址没错，是zuul服务配置文件application.yml里的名route字写错了。
