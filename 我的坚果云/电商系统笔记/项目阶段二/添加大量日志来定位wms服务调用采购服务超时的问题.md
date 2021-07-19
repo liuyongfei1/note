@@ -29,5 +29,43 @@ feign.FeignException: status 405 reading ScheduleService#schedulePurchaseInput(P
 {"timestamp":1626625363086,"status":405,"error":"Method Not Allowed","exception":"org.springframework.web.HttpRequestMethodNotSupportedException","message":"Request method 'POST' not supported","path":"/schedule/schedulePurchaseInput"}
 ```
 
+一时没找到解决办法，于是尝试使用用postman直接请求（不经过zuul网关）来测试一下：
 
 
+
+<img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210719234505040.png" alt="image-20210719234505040" style="zoom:50%;" />
+
+又看了看 OrderService里的getOrderById方法，与课程里的代码OrderService的getOrderById方法一比较发现:orderInfoId参数，没有使用@PathVariable来接收。
+
+于是修改OrderService的getOrderById方法（使用@PathVariable来接收orderInfoId）：
+
+```java
+/**
+ * 根据id查询订单
+ *
+ * @param orderInfoId 订单id
+ * @return 订单
+ */
+@Override
+public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) {
+    try {
+        return orderInfoService.getById(orderInfoId);
+    } catch (Exception e) {
+        logger.error("error",e);
+        return null;
+    }
+}
+```
+
+重新打包，再次请求，可以访问到数据了：
+
+虽然调度服务依然有这个日志：
+
+```bash
+2021-07-19 23:47:15.713 DEBUG 85213 --- [nio-9113-exec-5] o.s.b.a.e.mvc.EndpointHandlerMapping     : Looking up handler method for path /schedule/getScheduleResult
+2021-07-19 23:47:15.720 DEBUG 85213 --- [nio-9113-exec-5] o.s.b.a.e.mvc.EndpointHandlerMapping     : Did not find handler method for [/schedule/getScheduleResult]
+```
+
+但是可以正常访问订单服务了，并返回数据：
+
+<img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210719234651859.png" alt="image-20210719234651859" style="zoom:50%;" />
