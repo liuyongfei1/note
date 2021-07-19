@@ -14,10 +14,20 @@
 
 <img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210718162428739.png" alt="image-20210718162428739" style="zoom:50%;" />
 
-库存服务报错如下：
+调度服务报错如下：
 
 ```java
-Caused by: com.netflix.client.ClientException: Load balancer does not have available server for client: eshop-schedule
-at com.netflix.loadbalancer.LoadBalancerContext.getServerFromLoadBalancer(LoadBalancerContext.java:483) ~[ribbon-loadbalancer-2.2.5.jar:2.2.5]
+mvc.EndpointHandlerMapping     : Did not find handler method for [/schedule/schedulePurchaseInput]
 ```
+
+仔细查看了代码，该加的注解已经都加上了呀。
+
+将 ScheduleApi里的请求改为 PUT后，再次访问，报这个错：
+
+```java
+feign.FeignException: status 405 reading ScheduleService#schedulePurchaseInput(PurchaseOrderDTO); content:
+{"timestamp":1626625363086,"status":405,"error":"Method Not Allowed","exception":"org.springframework.web.HttpRequestMethodNotSupportedException","message":"Request method 'POST' not supported","path":"/schedule/schedulePurchaseInput"}
+```
+
+
 
