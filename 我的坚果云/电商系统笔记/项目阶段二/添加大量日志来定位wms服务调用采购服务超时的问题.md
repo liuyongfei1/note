@@ -31,8 +31,6 @@ feign.FeignException: status 405 reading ScheduleService#schedulePurchaseInput(P
 
 一时没找到解决办法，于是尝试使用用postman直接请求（不经过zuul网关）来测试一下：
 
-
-
 <img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210719234505040.png" alt="image-20210719234505040" style="zoom:50%;" />
 
 又看了看 OrderService里的getOrderById方法，与课程里的代码OrderService的getOrderById方法一比较发现:orderInfoId参数，没有使用@PathVariable来接收。
@@ -69,3 +67,5 @@ public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) 
 但是可以正常访问订单服务了，并返回数据：
 
 <img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210719234651859.png" alt="image-20210719234651859" style="zoom:50%;" />
+
+思考：为什么必须加上@PathVariable来接收orderInfoId？
