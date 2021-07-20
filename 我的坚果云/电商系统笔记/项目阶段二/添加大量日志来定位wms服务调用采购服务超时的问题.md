@@ -69,3 +69,11 @@ public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) 
 <img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210719234651859.png" alt="image-20210719234651859" style="zoom:50%;" />
 
 思考：为什么必须加上@PathVariable来接收orderInfoId？
+
+
+
+### 采购服务超时的原因
+
+1. 审核采购单方法开启了第一个事务对purchase_order（采购单表）进行状态更新，占据了表的一行锁，还没释放；
+2. 然后方法又调用了远程的接口，远程的接口触发了第二个事务；
+3. 第二个事务尝试去获取表的一行的行锁，结果第一个事务还没释放，所以导致第二个事务里的更新如此缓慢，一直卡在那里。
