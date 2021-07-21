@@ -126,3 +126,62 @@ feign.RetryableException: Read timed out executing POST http://eshop-wms/wms/cre
 1. 审核采购单方法开启了第一个事务对purchase_order（采购单表）进行状态更新，占据了表的一行锁，还没释放；
 2. 然后方法又调用了远程的接口，远程的接口触发了第二个事务；
 3. 第二个事务尝试去获取表的一行的行锁，结果第一个事务还没释放，所以导致第二个事务更新如此缓慢，一直卡在那里。
+
+
+
+### 解决办法
+
+重构采购服务代码：
+
+```java
+ /**
+     * 审核采购单
+     * 这里重构代码，原因：
+     * 调用的远程服务接口会开启事务，又和本地的方法在一个事务里，这样会导致引起mysql的行锁竞争，请求服务时就一直卡死
+     * @param id            采购单id
+     * @param approveResult 审核结果
+     * @throws Exception
+     */
+    @Override
+    public void approve(Long id, Integer approveResult) throws Exception {
+        if (PurchaseInputOrderApproveResult.REJECTED.equals(approveResult)) {
+            purchaseOrderDAO.updateStatus(id, PurchaseOrderStatus.EDITING);
+            return;
+        }
+
+        purchaseOrderDAO.updateStatus(id, PurchaseOrderStatus.APPROVED);
+
+//        // 通知调度中心
+//        scheduleService.schedulePurchaseInput(getById(id));
+    }
+```
+
+将通知调度中心放在controller层来做：
+
+```java
+/**
+     * 审核采购单
+     * @param id  采购单id
+     * @return 处理结果
+     */
+    @PutMapping("/approve/{id}")
+    public Boolean approve(@PathVariable("id") Long id, Integer approveResult) {
+        try {
+            purchaseOrderService.approve(id, approveResult);
+
+            // 通知调度中心（重构后的代码）
+            PurchaseOrderDTO purchaseOrder = purchaseOrderService.getById(id);
+            scheduleService.schedulePurchaseInput(purchaseOrder);
+            return true;
+        } catch (Exception e) {
+            logger.error("error", e);
+            return false;
+        }
+    }
+```
+
+重启服务后，再次使用postman请求：
+
+<img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210721234934229.png" alt="image-20210721234934229" style="zoom:40%;" />
+
+请求成功。
