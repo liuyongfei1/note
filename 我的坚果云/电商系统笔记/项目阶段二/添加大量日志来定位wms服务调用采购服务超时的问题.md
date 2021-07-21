@@ -79,9 +79,23 @@ public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) 
 ##### Zuul网关日志
 
 ```java
+com.netflix.zuul.exception.ZuulException: Forwarding error
+	at org.springframework.cloud.netflix.zuul.filters.route.RibbonRoutingFilter.handleException
 Caused by: java.net.SocketTimeoutException: Read timed out
 	at java.net.SocketInputStream.socketRead0(Native Method) ~[na:1.8.0_251]
 ```
+
+zuul调用等待超时，可以在application.yml设置超时连接时长：
+
+```yml
+zuul:
+  host:
+    connect-timeout-millis: 60000
+    socket-timeout-millis: 60000
+
+```
+
+
 
 ##### 采购服务
 
