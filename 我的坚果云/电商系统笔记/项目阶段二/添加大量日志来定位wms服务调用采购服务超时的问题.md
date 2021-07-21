@@ -70,6 +70,41 @@ public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) 
 
 思考：为什么必须加上@PathVariable来接收orderInfoId？
 
+使用Postman发起 审核采购单请求：
+
+<img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210721232351135.png" alt="image-20210721232351135" style="zoom:50%;" />
+
+#### 查看日志
+
+##### Zuul网关日志
+
+```java
+Caused by: java.net.SocketTimeoutException: Read timed out
+	at java.net.SocketInputStream.socketRead0(Native Method) ~[na:1.8.0_251]
+```
+
+##### 采购服务
+
+```java
+2021-07-21 23:26:49.034 ERROR 4745 --- [io-9112-exec-20] c.f.p.c.PurchaseOrderController          : error
+
+feign.RetryableException: Read timed out executing PUT http://eshop-schedule/schedule/schedulePurchaseInput
+	at feign.FeignException.errorExecuting(FeignException.java:67) ~[feign-core-9.5.0.jar:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:104) ~[feign-core-9.5.0.jar:na]
+```
+
+##### 调度服务
+
+```java
+2021-07-21 23:26:49.014 ERROR 49499 --- [nio-9113-exec-3] c.f.schedule.api.ScheduleService         : error
+
+feign.RetryableException: Read timed out executing POST http://eshop-wms/wms/createPurchaseInputOrder
+	at feign.FeignException.errorExecuting(FeignException.java:67) ~[feign-core-9.5.0.jar:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:104) ~[feign-core-9.5.0.jar:na]
+```
+
+
+
 
 
 ### 采购服务超时的原因
