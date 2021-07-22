@@ -76,7 +76,11 @@ method.invoke(bean,"xy")
 
 Class还可以访问Annotation，这样就Spring使用注解的时候，可以完成注入的功能。
 
-#### 依赖注入
+#### 控制反转（IOC）
+
+https://www.cnblogs.com/xdp-gacl/p/4249939.html
+
+#### 依赖注入（DI）
 
 Spring容器在创建被调用者的实例时，会自动将调用者需要的对象实例注入给调用者。
 
@@ -85,3 +89,7 @@ Spring容器在创建被调用者的实例时，会自动将调用者需要的�
 依赖注入主要有两种实现方式，分别是属性setter注入和构造方法注入。
 
 比如调用者是UserService，被调用者是UserDAO。
+
+#### Spring中的BeanFactory实现
+
+https://blog.csdn.net/fanbaodan/article/details/90346043

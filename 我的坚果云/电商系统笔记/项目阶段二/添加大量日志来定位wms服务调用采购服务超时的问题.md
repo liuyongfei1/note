@@ -80,9 +80,15 @@ public OrderInfoDTO getOrderById(@PathVariable("orderInfoId") Long orderInfoId) 
 
 ```java
 com.netflix.zuul.exception.ZuulException: Forwarding error
-	at org.springframework.cloud.netflix.zuul.filters.route.RibbonRoutingFilter.handleException
-Caused by: java.net.SocketTimeoutException: Read timed out
-	at java.net.SocketInputStream.socketRead0(Native Method) ~[na:1.8.0_251]
+
+com.netflix.client.ClientException: null
+
+java.lang.RuntimeException: java.net.SocketTimeoutException: Read timed out
+
+java.net.SocketTimeoutException: Read timed out
+————————————————
+版权声明：本文为CSDN博主「l去留无心」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_41937388/article/details/105484352
 ```
 
 zuul调用等待超时，可以在application.yml设置超时连接时长：
@@ -185,3 +191,4 @@ feign.RetryableException: Read timed out executing POST http://eshop-wms/wms/cre
 <img src="添加大量日志来定位wms服务调用采购服务超时的问题.assets/image-20210721234934229.png" alt="image-20210721234934229" style="zoom:40%;" />
 
 请求成功。
+
