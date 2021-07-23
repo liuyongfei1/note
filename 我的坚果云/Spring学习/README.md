@@ -48,7 +48,7 @@ Class c = Class.forName("com.xy.Student");
 Object bean = c.getInstance();
 ```
 
-Spring调用getter,setter方法
+Spring调用getter，setter方法
 
 
 
