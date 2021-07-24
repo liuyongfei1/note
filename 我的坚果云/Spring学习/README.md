@@ -117,3 +117,7 @@ Spring容器在创建被调用者的实例时，会自动将调用者需要的�
 #### Spring中的BeanFactory实现
 
 https://blog.csdn.net/fanbaodan/article/details/90346043
+
+### BeanFactory和ApplicationContext
+
+Spring通过一个配置文件，描述bean与bean之间的依赖关系，利用java反射功能实例化bean，并建立bean之间的依赖关系。
