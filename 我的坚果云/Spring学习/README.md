@@ -121,3 +121,11 @@ https://blog.csdn.net/fanbaodan/article/details/90346043
 ### BeanFactory和ApplicationContext
 
 Spring通过一个配置文件，描述bean与bean之间的依赖关系，利用java反射功能实例化bean，并建立bean之间的依赖关系。
+
+Spring IOC容器在完成这些底层工作的基础上，还提供了bean实例缓存，声明周期管理，资源装载等高级服务。
+
+BeanFactory是spring框架最核心的接口，它提供了高级IOC的配置机制。
+
+ApplicationContext建立在BeanFactory基础上，提供了更多面向应用的功能，它提供了国际化支持和框架事件体系。
+
+我们一般称BeanFactory为ICO容器，称ApplicationContext为应用上下文，但有时候为了行为方便，我们也将ApplicationContext称为spring容器。
