@@ -83,3 +83,58 @@ public class ScheduleStockUpdateMessageConsumer {
     }
 }
 ```
+
+#### 使用postman测试
+
+##### 服务说明
+
+库存服务有两个实例，调度服务有两个实例：
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725184002500.png" alt="image-20210725184002500" style="zoom:50%;" />
+
+##### 请求参数
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725184104817.png" alt="image-20210725184104817" style="zoom:50%;" />
+
+构造订单数据：
+
+```json
+{
+    "id": 1,
+    "orderNo": "no123",
+    "userAccountId": 1,
+    "username": "测试1",
+    "orderStatus": 1,
+    "consignee": "张三",
+    "deliveryAddress": "北京海淀",
+    "consigneeCellPhoneNumber": 19898,
+    "freight": "5.00",
+    "payType": 1,
+    "totalAmount": "30.00",
+    "discountAmount": "5.00",
+    "couponAmount": "2.00",
+    "payableAmount": "23.00",
+    "invoiceTitle": "发票抬头",
+    "taxpayerId": "纳税人识别号",
+    "orderComment": "订单备注",
+    "publishedComment": 0,
+    "confirmReceiptTime": null,
+    "items": [{
+        "id": 1,
+        "orderInfoId": 1,
+        "goodsId": 1,
+        "goodsSkuCode": 101,
+        "goodsName": "sdfsdfsdfsdfsd",
+        "saleProperties": "fglkljl",
+        "goodsGrossWeight": "10.00",
+        "purchaseQuantity": "20",
+        "purchasePrice": "5.00",
+        "promotionActivityId": null,
+        "goodsLength": "2.00",
+        "goodsWidth": "3.00",
+        "goodsHeight": "4.00"
+    }]
+
+}
+```
+
