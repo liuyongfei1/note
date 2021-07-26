@@ -92,9 +92,13 @@ public class ScheduleStockUpdateMessageConsumer {
 
 <img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725184002500.png" alt="image-20210725184002500" style="zoom:50%;" />
 
+
+
 ##### 请求参数
 
 <img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725184104817.png" alt="image-20210725184104817" style="zoom:50%;" />
+
+
 
 构造订单数据：
 
@@ -133,9 +137,35 @@ public class ScheduleStockUpdateMessageConsumer {
         "goodsLength": "2.00",
         "goodsWidth": "3.00",
         "goodsHeight": "4.00"
-    }]
-
+    }],
+    "orderOperateLog": [
+        {
+            "id": 1,
+            "orderInfoId": 1,
+            "operateType":1,
+            "operateContent": "测试"
+        }
+    ]
 }
 ```
 
-由于使用了
+由于使用了spring cloud feign，它本身就包含了spring cloud ribbon，所以从库存中心发起的请求，会通过负载均衡，只有一台库存服务会接收到请求：
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725190436774.png" alt="image-20210725190436774" style="zoom:50%;" />
+
+
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725190555587.png" alt="image-20210725190555587" style="zoom:50%;" />
+
+接着看调度服务：
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725190717833.png" alt="image-20210725190717833" style="zoom:50%;" />
+
+
+
+消费消息：
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725190825817.png" alt="image-20210725190825817" style="zoom:50%;" />
+
+<img src="将原来使用内存队列的功能代码重构为使用Rabbitmq.assets/image-20210725191017547.png" alt="image-20210725191017547" style="zoom:50%;" />
+
