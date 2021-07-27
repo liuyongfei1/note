@@ -161,4 +161,4 @@ public final void cal() {
 
 整个过程的方法调用逻辑是：
 
-Main1中的t.cal()   ------>  Test$$EnhancerByCGLIB$$7ce11e59.class中的 cal()   ------> 自定义拦截器AIntercepter中的intercept()   ------> 被代理类Test中的cal()方法。
+Main1中的t.cal()   ------>  TestEnhancerByCGLIB7ce11e59.class中的 cal()   ------> 自定义拦截器AIntercepter中的intercept()   ------> 被代理类Test中的cal()方法。
