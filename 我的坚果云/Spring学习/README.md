@@ -35,47 +35,6 @@ ApplicationContext ctx = new FileSystemXmlApplicationContext(new String[]{"sprin
 
 
 
-### Spring的反射机制
-
-反射是根据Class.forName("**cn.classes.OneClass**")去生成一个具体的实例。
-
-比如，当我们需要根据传进来的参数，选择具体的实现类时，反射机制就能很好的解决问题。
-
-Spring中使用Class实例化
-
-```java
-Class c = Class.forName("com.xy.Student");
-Object bean = c.getInstance();
-```
-
-Spring调用getter，setter方法
-
-
-
-我们以setter注入例子，bean.xml：
-
-```xml
-<bean id="id" class="com.xy.Student">
-    <property name="stuName" value="xy" />
-</bean>
-```
-
-
-
-```java
-Class c = Class.forName("com.xy.Student");
-Object bean = c.getInstance();
-
-// 通过一些操作获取stuName对应的setter方法名
-String setName = "set" + "stuName";
-Methond method = c.getMethod(setName, String.Class);
-method.invoke(bean,"xy")
-```
-
-这样就完成了最基本的注入操作。
-
-Class还可以访问Annotation，这样就Spring使用注解的时候，可以完成注入的功能。
-
 #### 控制反转（IOC）
 
 https://www.cnblogs.com/xdp-gacl/p/4249939.html
@@ -102,15 +61,56 @@ Spring所倡导的开发方式就是如此，所有的类都会在Spring容器�
 3. 在系统运行时，spring会在适当的时候制造一个Connection，然后像打针一样，注入到A对象中，这样就完成了各个对象之间关系的控制。
    A需要依赖Connection才能正常运行，而这个Connection是由spring注入到A中去，依赖注入的名字就是这么来的。
 
-那么DI是如何实现的呢？Java 1.3之后，**一个重要的特征就是发射（reflection），它允许程序在运行的时候动态的生成对象、执行对象的方法、改变对象的属性。spring就是通过反射来实现注入的**。
+那么DI是如何实现的呢？Java 1.3之后，**一个重要的特征就是发射（reflection），它允许程序在运行的时候动态的生成对象、执行对象的方法、改变对象的属性。**spring就是通过**反射**来实现注入的。
 
 Spring容器在创建被调用者的实例时，会自动将调用者需要的对象实例注入给调用者。
 
 这样，调用者通过 Spring容器 获得被调用者实例，这就称为依赖注入。
 
-依赖注入主要有两种实现方式，分别是属性setter注入和构造方法注入。
+依赖注入主要有两种实现方式，分别是**属性setter注入和构造方法注入**。
 
 比如调用者是UserService，被调用者是UserDAO。
+
+### Spring的反射机制
+
+反射是根据Class.forName("**cn.classes.OneClass**")去生成一个具体的实例。
+
+比如，当我们需要根据传进来的参数，选择具体的实现类时，反射机制就能很好的解决问题。
+
+Spring中使用Class实例化
+
+```java
+Class c = Class.forName("com.xy.Student");
+Object bean = c.getInstance();
+```
+
+Spring调用getter，setter方法
+
+我们以setter注入例子，bean.xml：
+
+```xml
+<bean id="id" class="com.xy.Student">
+    <property name="stuName" value="xy" />
+</bean>
+```
+
+
+
+```java
+Class c = Class.forName("com.xy.Student");
+Object bean = c.getInstance();
+
+// 通过一些操作获取stuName对应的setter方法名
+String setName = "set" + "stuName";
+Methond method = c.getMethod(setName, String.Class);
+method.invoke(bean,"xy")
+```
+
+这样就完成了最基本的注入操作。
+
+Class还可以访问Annotation，这样就Spring使用注解的时候，可以完成注入的功能。
+
+
 
 #### Spring中的BeanFactory实现
 
