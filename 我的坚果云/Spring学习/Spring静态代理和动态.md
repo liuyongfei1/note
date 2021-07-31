@@ -66,12 +66,14 @@ public class IPersonProxy implement IPerson {
   }
   @Override
   public void sleep() {
+    // todo 增强逻辑
     logger.info("开始执行时间：" + new Date());
     person.sleep();
     logger.info("结束执行时间：" + new Date());
   }
   @Override
   public void eating() {
+    // todo 增强逻辑
     logger.info("开始执行时间：" + new Date());
     person.eating();
     logger.info("结束执行时间：" + new Date());
@@ -91,9 +93,15 @@ public class PersonTest {
 }
 ```
 
+### 弊端
 
+一个代理接口只能服务一种类型的对象，对于稍大点的项目根本无法胜任。
 
-## SpringBoot动态代理
+#### 解决方案
+
+使用动态代理。
+
+## 动态代理
 
 在程序运行过程中生成代理对象，由该代理对象去完成自己要去做的事情。
 
@@ -102,6 +110,126 @@ public class PersonTest {
 ### 解决方案
 
 将对象增删改查方法交给代理去执行，代理在执行方法前后可以做权限校验和日志记录。
+
+### 代码demo
+
+#### 定义接口
+
+```java
+/**
+ * 定义接口
+ * @date 2021/07/31
+ */
+public interface IPerson {
+
+         public abstract void sleep();
+
+         public abstract void eating();
+
+}
+```
+
+接口实现类（被代理类）
+
+```java
+/**
+ * 接口实现类
+ * 只关注处理业务逻辑
+ * @author Liuyongfei
+ * @date 2021/7/31 12:08
+ */
+public class IPersonImpl implements IPerson{
+    @Override
+    public void sleep() {
+        System.out.println("睡觉中");
+    }
+
+    @Override
+    public void eating() {
+        System.out.println("吃饭中");
+    }
+}
+```
+
+#### 处理器
+
+```java
+/**
+ * 创建处理器，用于增强逻辑
+ *
+ * @author Liuyongfei
+ * @date 2021/7/31 12:36
+ */
+public class DynaProxyHandler implements InvocationHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(DynaProxyHandler.class);
+
+    /**
+     * 被代理对象
+     */
+    private Object target;
+    public void setTarget(Object target) {
+        this.target = target;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if (method.getName().equals("sleep")) {
+            logger.info("sleep方法开始执行时间:" + new Date());
+        } else {
+            logger.info("eating方法开始执行时间:" + new Date());
+        }
+
+        Object result = method.invoke(target, args);
+
+        if (method.getName().equals("sleep")) {
+            logger.info("sleep方法结束执行时间:" + new Date());
+        } else {
+            logger.info("eating方法结束执行时间:" + new Date());
+        }
+        return result;
+    }
+}
+```
+
+动态代理工厂
+
+```java
+/**
+ * 动态代理类工厂
+ *
+ * @author Liuyongfei
+ * @date 2021/7/31 12:35
+ */
+public class DynamicProxyFactory {
+    public static Object getProxy(Object object) {
+        DynaProxyHandler handler = new DynaProxyHandler();
+        handler.setTarget(object);
+
+        return Proxy.newProxyInstance(object.getClass().getClassLoader(),
+                object.getClass().getInterfaces(),handler);
+    }
+}
+```
+
+#### 测试
+
+```java
+/**
+ * 动态代理
+ *
+ * @author Liuyongfei
+ * @date 2021/7/31 10:40
+ */
+public class DynamicProxyTest {
+
+    public static void main(String[] args) {
+        IPerson person = (IPerson) DynamicProxyFactory.getProxy(new IPersonImpl());
+        person.sleep();
+        person.eating();
+    }
+}
+```
 
 ### 总结
 
@@ -121,70 +249,19 @@ SpringBoot默认使用JDK的动态代理，当类没有实现接口时才使用c
 
 这种代理适用于实现了接口的类。
 
-假设现在有一个接口UserService：
-
-```java
-public interface UserService {
-	void query(String name);
-}
-```
-
-有一个类UserServiceImpl，实现了接口：
-
-```java
-// 被代理的类
-public class UserService implements UserService {
-	@Override
-	public void query(String name) {
-		System.out.println("query name = " + name);
-	}
-}
-```
-
-那么怎么代理上面这个UserServiceImpl类呢？
-
 JDK动态代理的思想是：
 
 生成一个类，让它和被代理的对象（UserServiceImpl）实现同样的接口，并重写接口的方法。
 
-如下所示（注意：下面这个类是JDK自动生成的）：
-
 ```java
-public class LogUserProxy implements UserService {
-  // 被代理的对象做为自动生成的这个类的一个属性
-  private UserService userService;
-  // 构造方法将被代理对象注入进去
-  public LogUserProxy(UserService userService) {
-    this.userService = userService;
-  }
+public class DynamicProxyPerson {
   
-  // 重写接口方法，实现代理原方法的功能
-  @Override
-  public void query(String name) {
-    // todo 增强逻辑
-    System.out.println("增强逻辑");
-    userService.query(name);
-    //todo 增强逻辑
-    System.out.println("增强逻辑");
-  }
 }
 ```
 
-上面有两个类，UserImpl（被代理的类）和LogUserProxy（自动生成的类）
 
-面相接口编程中常常使用如下形式调用UserImpl（SpringBoot中会自动注入）
 
-```java
-UserService service = new UserImpl();
-service.query("aaa");
-```
 
-如果这个时候，我们将上述代码改为如下形式即可完成代理：
-
-```java
-UserService service = new LogUserProxy();
-service.query("aaa");
-```
 
 #### cglib动态代理
 
