@@ -21,7 +21,77 @@
 
 ### 解决方案
 
-- 静态代理，
+- 静态代理，将业务代理与记录日志、权限校验这些代码完全分开，实现松散耦合；
+- 代理对象必须与被代理对象实现同一接口，在代理对象中实现记录日志的逻辑，并在需要的时候呼叫被代理对象，而被代理对象只保留业务代码。
+
+#### 举例
+
+##### 定义接口
+
+```java
+public interface IPerson {
+
+         public abstract void sleep();
+
+         public abstract void eating();
+
+}
+```
+
+##### 被代理类
+
+```java
+public class Person implements IPerson {
+  @Override
+  public void sleep() {
+    System.out.println("睡觉中");
+  }
+  @Override
+  public void eating() {
+    System.out.println("吃饭中");
+  }
+}
+```
+
+##### 代理类
+
+```java
+import org.apache.log4g.Logger;
+public class IPersonProxy implement IPerson {
+  private IPerson person;
+  private Logger logger = Logger.getLogger(PersonProxy.class);
+  
+  public PersonProxy(IPerson person) {
+    this.person = person;
+  }
+  @Override
+  public void sleep() {
+    logger.info("开始执行时间：" + new Date());
+    person.sleep();
+    logger.info("结束执行时间：" + new Date());
+  }
+  @Override
+  public void eating() {
+    logger.info("开始执行时间：" + new Date());
+    person.eating();
+    logger.info("结束执行时间：" + new Date());
+  }
+}
+```
+
+##### 测试类
+
+```java
+public class PersonTest {
+		public static void main(String[]) args {
+			IPersonProxy personProxy = new IPersonProxy(new Person);
+			personProxy.sleep();
+			personProxy.eating();
+		}
+}
+```
+
+
 
 ## SpringBoot动态代理
 
