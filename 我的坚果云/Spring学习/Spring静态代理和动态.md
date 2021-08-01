@@ -99,21 +99,29 @@ public class PersonTest {
 
 #### 解决方案
 
-使用动态代理。
+使用动态代理。将对象增删改查方法交给代理去执行，代理在执行方法前后可以做权限校验和日志记录。
 
 ## 动态代理
 
 在程序运行过程中生成代理对象，由该代理对象去完成自己要去做的事情。
 
+### 动态代理有哪些
 
+动态代理分为两种，JDK的动态代理和cglib的动态代理。
 
-### 解决方案
+SpringBoot默认使用JDK的动态代理，当类没有实现接口时才使用cglib的动态代理。
 
-将对象增删改查方法交给代理去执行，代理在执行方法前后可以做权限校验和日志记录。
+#### jdk的动态代理
 
-### 代码demo
+这种代理适用于实现了接口的类。
 
-#### 定义接口
+JDK动态代理的思想是：
+
+生成一个类，让它和被代理的对象（UserServiceImpl）实现同样的接口，并重写接口的方法。
+
+#### 代码demo
+
+##### 定义接口
 
 ```java
 /**
@@ -129,7 +137,7 @@ public interface IPerson {
 }
 ```
 
-接口实现类（被代理类）
+##### 接口实现类（被代理类）
 
 ```java
 /**
@@ -151,7 +159,7 @@ public class IPersonImpl implements IPerson{
 }
 ```
 
-#### 处理器
+##### 处理器
 
 ```java
 /**
@@ -192,7 +200,7 @@ public class DynaProxyHandler implements InvocationHandler {
 }
 ```
 
-动态代理工厂
+##### 动态代理工厂
 
 ```java
 /**
@@ -212,7 +220,7 @@ public class DynamicProxyFactory {
 }
 ```
 
-#### 测试
+##### 测试
 
 ```java
 /**
@@ -231,37 +239,13 @@ public class DynamicProxyTest {
 }
 ```
 
-### 总结
+#### 总结
 
 代理：本来应该自己做的事，由别人去做。
 
 动态代理：在程序运行过程中生成代理对象，由代理对象去完成自己要去做的事情。
 
 spring 的动态代理就是AOP的实现原理。
-
-### SpringBoot动态代理有哪些
-
-SpringBoot动态代理分为两种，JDK的动态代理和cglib的动态代理。
-
-SpringBoot默认使用JDK的动态代理，当类没有实现接口时才使用cglib的动态代理。
-
-#### jdk的动态代理
-
-这种代理适用于实现了接口的类。
-
-JDK动态代理的思想是：
-
-生成一个类，让它和被代理的对象（UserServiceImpl）实现同样的接口，并重写接口的方法。
-
-```java
-public class DynamicProxyPerson {
-  
-}
-```
-
-
-
-
 
 #### cglib动态代理
 
