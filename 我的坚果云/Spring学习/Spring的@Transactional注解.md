@@ -47,3 +47,34 @@ Spring 注解类（包含`@Transactional`）都是基于Spring AOP机制实现�
 6. 事务隔离级别；
 7. hibernate orm；
 8. JDBC。
+
+### 为@Transactional设置rollbackFor属性有什么用
+
+#### 常见的throwable异常和错误
+
+我们先来看一下常见的throwable异常和错误：
+
+<img src="Spring的@Transactional注解.assets/Throwable包含的异常类和错误类-7979364.png" alt="Throwable包含的异常类和错误类" style="zoom:50%;" />
+
+
+
+#### Spring的@Transaction默认情况下的事务回滚
+
+默认情况下，Spring的@Transaction只有在发生RuntimeException异常和Error异常时，才会进行事务回滚。
+
+可以通过spring-tx jar包查看源码来验证这一点。在`DefaultTransactionAttribute`类里可以看到：
+
+```java
+public boolean rollbackOn(Throwable ex) {
+    return ex instanceof RuntimeException || ex instanceof Error;
+}
+```
+
+只有在遇到 `RuntimeException`或`Error`异常时才会进行事务回滚。
+
+因此我们经常在实际开发中，通过配置rollBackFor属性，让事务在遇到非运行时异常时也进行回滚：
+
+```java
+@Transactional(rollbackFor=Exception.class)
+```
+
