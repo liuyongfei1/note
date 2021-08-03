@@ -187,3 +187,13 @@ publi void testCtx {
 AOP我们一般称为面相切面编程，做为面相对象的一种补充，用于处理系统中分布于各个模块的横切关注点，比如：事务管理、日志、缓存等。
 
 AOP实现的关键在于AOP框架自动创建的AOP代理，AOP代理主要分为静态代理和动态代理，静态代理的代表为AspectJ，动态代理则以Spring AOP为代表。
+
+#### 使用AspectJ的编译时增强实现AOP
+
+aspectJ是静态代理的增强，所谓的静态代理就是AOP框架会在编译阶段生成AOP代理类，因此也称为编译时增强。
+
+举例：
+
+https://blog.csdn.net/rocling/article/details/102829524
+
+它会在编译阶段将Aspect织入Java字节码中，运行的时候就是经过增强之后的AOP对象。
