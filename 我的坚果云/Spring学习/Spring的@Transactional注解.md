@@ -1,5 +1,34 @@
 ## Spring为什么加了@Transactional注解就支持事务了呢
 
+### 编程式事务
+
+之前我们自己调用JDBC的api去管理实物时，经常是要写类似这样的代码：
+
+```java
+import java.sql.Connection;
+
+Connection connection = dataSource.getConnection(); 
+
+try (connection) {
+    // 开启事务
+    connection.setAutoCommit(false); 
+    // 执行sql语句
+    // ......
+    // 提交事务
+    connection.commit(); 
+
+} catch (SQLException e) {
+    // 发送异常，则回滚事务
+    connection.rollback(); 
+}
+```
+
+这种编程式事务往往将事务管理和业务逻辑掺杂到了一块儿，因此在实际开发中，声明式事务用的比较多。
+
+### 声明式事务
+
+声明式事务有两种方式，一种是在配置文件（xml）中做相关的事务规则声明，另一种就是通过`@Transactional`注解的方式。
+
 Spring 注解类（包含`@Transactional`）都是基于Spring AOP机制实现的。
 
 ### 概述
