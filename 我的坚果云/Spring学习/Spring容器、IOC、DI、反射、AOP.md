@@ -197,3 +197,14 @@ aspectJ是静态代理的增强，所谓的静态代理就是AOP框架会在编�
 https://blog.csdn.net/rocling/article/details/102829524
 
 它会在编译阶段将Aspect织入Java字节码中，运行的时候就是经过增强之后的AOP对象。
+
+#### Spring AOP动态代理
+
+Spring AOP使用的是动态代理，所谓的动态代理就是说AOP框架不会去修改字节码，而是在内存中临时为方法生成一个AOP对象，这个AOP对象包含了目标对象的全部方法，并且在特定的切点做了增强处理，并回调原对象的方法。
+
+spring aop中的动态代理主要有两种方式：JDK动态代理和CGLIB动态代理。
+
+举例：
+
+https://blog.csdn.net/rocling/article/details/102829524
+
