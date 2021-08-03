@@ -180,7 +180,10 @@ publi void testCtx {
 }
 ```
 
-### AOP概览
+### AOP的实现原理
 
 一个比较容易理解的例子：https://blog.csdn.net/q982151756/article/details/80513340
 
+AOP我们一般称为面相切面编程，做为面相对象的一种补充，用于处理系统中分布于各个模块的横切关注点，比如：事务管理、日志、缓存等。
+
+AOP实现的关键在于AOP框架自动创建的AOP代理，AOP代理主要分为静态代理和动态代理，静态代理的代表为AspectJ，动态代理则以Spring AOP为代表。
