@@ -39,7 +39,7 @@ Spring 注解类（包含`@Transactional`）都是基于Spring AOP机制实现�
 
 ### Spring源码@Transactional的调用链
 
-![Spring的@Transtractional注解](Spring的@Transactional注解.assets/Spring的@Transtractional注解.png)
+![Spring的@Transtractional注解](Spring的@Transactional注解.assets/Spring的@Transtractional注解-7991784.png)
 
 备注：
 
@@ -89,9 +89,9 @@ Spring 注解类（包含`@Transactional`）都是基于Spring AOP机制实现�
 
 #### Spring的@Transaction默认情况下的事务回滚
 
-默认情况下，Spring的@Transaction只有在发生RuntimeException异常和Error异常时，才会进行事务回滚。
+默认情况下，Spring只有在发生RuntimeException异常和Error异常时，才会进行事务回滚。
 
-可以通过spring-tx jar包查看源码来验证这一点。在`DefaultTransactionAttribute`类里可以看到：
+可以通过spring-tx jar包查看源码来验证这一点，打开`DefaultTransactionAttribute`类查看`rollbackOn`方法：
 
 ```java
 public boolean rollbackOn(Throwable ex) {
@@ -99,7 +99,7 @@ public boolean rollbackOn(Throwable ex) {
 }
 ```
 
-只有在遇到 `RuntimeException`或`Error`异常时才会进行事务回滚。
+可以看到，只有在遇到 `RuntimeException`或`Error`异常时才会进行事务回滚。
 
 因此我们经常在实际开发中，通过配置rollBackFor属性，让事务在遇到非运行时异常时也进行回滚：
 
@@ -107,3 +107,6 @@ public boolean rollbackOn(Throwable ex) {
 @Transactional(rollbackFor=Exception.class)
 ```
 
+### @Transactional为什么只能应用到public修饰的方法上
+
+Spring默认通过动态代理的方式实现AOP，
