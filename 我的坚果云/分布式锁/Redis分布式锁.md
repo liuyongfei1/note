@@ -20,7 +20,29 @@
 
 获取了一个分布式操作之后，就对某个共享的数据获取了一定时间范围内的独享操作。
 
+#### 源码分析
 
+使用redisson客户端来进行redis分布式锁的源码分析。
+
+```java
+Config config = new Config();
+
+// 这里本地没有搭建redis集群
+config.useClusterServers().addNodeAddress("localhost:6379");
+
+RedissonClient redisson = Redisson.create(config);
+
+RLock lock = redisson.getLock("anyLock");
+lock.lock();
+```
+
+##### getLock()
+
+1. 这里getLock方法获取到的是RedissonLock对象，它里面封装了一个commandExecutor，可以执行一些redis的底层命令，比如set，get的一些操作；
+
+2. 还有一个internalLockLeaseTime，是跟watch dog有关的，默认是30秒。
+
+   
 
 #### 可重入锁
 
