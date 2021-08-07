@@ -51,70 +51,65 @@ lock()方法源码调用树如下：
 
 大概解释一下这段lua脚本：
 
-```lua
-if (redis.call('exists', KEYS[1]) == 0) then，KEYS[1]
-```
-
-用redis的 exists 命令判断一下，我们要加锁的那个锁名字比如叫"anyLock"是否存在，如果不存在，那么就进行加锁。
-
-使用redis的hset指令进行加锁，会在redis里存储一个map结构的数据：
+**第一部分**
 
 ```lua
-redis.call('hset', KEYS[1], ARGV[2], 1); 
+if (redis.call('exists', KEYS[1]) == 0) then 
+  redis.call('hset', KEYS[1], ARGV[2], 1); 
+  redis.call('pexpire', KEYS[1], ARGV[1]); 
+  return nil; 
 ```
 
-比如：锁的名字叫testLock，其中一个字段叫 age，年龄为30：
+1. 用redis的 exists 命令判断一下，我们要加锁的那个锁名字比如叫"anyLock"是否存在，如果不存在，那么就进行加锁；
 
-```bash
-127.0.0.1:6379> hset testLock age 30
-(integer) 1
-```
+2. 使用redis的hset指令进行加锁，会在redis里存储一个map结构的数据：
 
-就会在redis中生成 "testLock"的一个map：
+   比如：锁的名字叫testLock，其中一个字段叫 age，年龄为30：
 
-```json
-{
+   ```bash
+    127.0.0.1:6379> hset testLock age 30
+    (integer) 1
+   ```
 
-   "age": 30
+   就会在redis中生成 "testLock"的一个map：
 
-}
-```
+   ```json
+   {
+      "age": 30
+   }
+   ```
 
-```lua
-redis.call('pexpire', KEYS[1], ARGV[1]); 
-```
+3. 给我们加的锁 "testLock"设置过期时间。
 
-给我们加的锁 "testLock"设置过期时间。
+**第二部分**
 
 ```lua
 if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then 
   redis.call('hincrby', KEYS[1], ARGV[2], 1); 
   redis.call('pexpire', KEYS[1], ARGV[1]); 
+  return redis.call('pttl', KEYS[1])
 ```
 
-如果存在针对"testLock" 的这个map里，存在"age"这个key：
+1. 如果存在针对"testLock" 的这个map里，存在"age"这个key：
 
-- 则使用redis的hincrby指令，将"age"的值累加1；
-- 再次使用pexpire指令，设置过期时间。
+2. 则使用redis的hincrby指令，将"age"的值累加1；
 
-也就相当于这个过程：
+3. 再次使用pexpire指令，设置过期时间。
 
-```bash
-127.0.0.1:6379> hset testLock age 30
-(integer) 1
-127.0.0.1:6379> hexists testLock age
-(integer) 1
-127.0.0.1:6379> hincrby testLock age 1
-(integer) 31
-127.0.0.1:6379> pexpire testLock 30000
-(integer) 1
-```
+   也就相当于这个过程：
 
-```lua
-return redis.call('pttl', KEYS[1])
-```
+   ```bash
+   127.0.0.1:6379> hset testLock age 30
+   (integer) 1
+   127.0.0.1:6379> hexists testLock age
+   (integer) 1
+   127.0.0.1:6379> hincrby testLock age 1
+   (integer) 31
+   127.0.0.1:6379> pexpire testLock 30000
+   (integer) 1
+   ```
 
-其实就是执行pttl指令，得到当前key的存活周期，并返回。
+4. 其实就是执行pttl指令，得到当前key的存活周期，并返回。
 
 
 
