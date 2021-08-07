@@ -39,10 +39,84 @@ lock.lock();
 ##### getLock()
 
 1. 这里getLock方法获取到的是RedissonLock对象，它里面封装了一个commandExecutor，可以执行一些redis的底层命令，比如set，get的一些操作；
-
 2. 还有一个internalLockLeaseTime，是跟watch dog有关的，默认是30秒。
 
-   
+##### lock()
+
+lock()方法源码调用树如下：
+
+<img src="Redis分布式锁.assets/redisson源码学习：lock方法.png" alt="redisson源码学习：lock方法" style="zoom:50%;" />
+
+我们可以看到，redisson的lock()方法，底层是执行了一段针对redis的lua脚本（redis本身是支持执行lua脚本的）。
+
+大概解释一下这段lua脚本：
+
+```lua
+if (redis.call('exists', KEYS[1]) == 0) then，KEYS[1]
+```
+
+用redis的 exists 命令判断一下，我们要加锁的那个锁名字比如叫"anyLock"是否存在，如果不存在，那么就进行加锁。
+
+使用redis的hset指令进行加锁，会在redis里存储一个map结构的数据：
+
+```lua
+redis.call('hset', KEYS[1], ARGV[2], 1); 
+```
+
+比如：锁的名字叫testLock，其中一个字段叫 age，年龄为30：
+
+```bash
+127.0.0.1:6379> hset testLock age 30
+(integer) 1
+```
+
+就会在redis中生成 "testLock"的一个map：
+
+```json
+{
+
+   "age": 30
+
+}
+```
+
+```lua
+redis.call('pexpire', KEYS[1], ARGV[1]); 
+```
+
+给我们加的锁 "testLock"设置过期时间。
+
+```lua
+if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then 
+  redis.call('hincrby', KEYS[1], ARGV[2], 1); 
+  redis.call('pexpire', KEYS[1], ARGV[1]); 
+```
+
+如果存在针对"testLock" 的这个map里，存在"age"这个key：
+
+- 则使用redis的hincrby指令，将"age"的值累加1；
+- 再次使用pexpire指令，设置过期时间。
+
+也就相当于这个过程：
+
+```bash
+127.0.0.1:6379> hset testLock age 30
+(integer) 1
+127.0.0.1:6379> hexists testLock age
+(integer) 1
+127.0.0.1:6379> hincrby testLock age 1
+(integer) 31
+127.0.0.1:6379> pexpire testLock 30000
+(integer) 1
+```
+
+```lua
+return redis.call('pttl', KEYS[1])
+```
+
+其实就是执行pttl指令，得到当前key的存活周期，并返回。
+
+
 
 #### 可重入锁
 
