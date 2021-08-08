@@ -204,11 +204,77 @@ return evalAsync(source, false, codec, evalCommandType, script, keys, params);
 
 evalAsync方法通过传入的这些参数，会与redis进行通信，执行lua脚本，进行加锁。比较偏底层一些，这里就不再详细介绍了。
 
-
-
 #### 可重入锁
 
 如果是在一个客户端的一个线程内，先对一个Lock进行了加锁，然后后面又加了一次锁，这样就形成了一个叫做可重入锁的概念。
 
-就是同一个线程对一个lock可以反复的重复加锁多次，每次加锁和一次释放锁必须是配对的。
+首次加锁的主要逻辑我们已经搞明白了，首次加锁后，"testLock"会存在这样一个数据结构：
 
+```json
+"testLock" : {
+	"jk6b27a7-5346-483a-b9b5-0957c690c27f:1" : 1
+}
+```
+
+如果同一个客户端的同一个线程多次执行了加锁命令，比如：
+
+```java
+RedissonClient redisson = Redisson.create(config);
+
+RLock lock = redisson.getLock("testLock");
+lock.lock();
+// 再次执行加锁
+lock.lock();
+```
+
+那么，redisson是怎么处理的呢？
+
+其实其它的代码调用流程都是一样的，我们只需把关注点放在那段加锁的lua脚本上即可：
+
+<img src="redisson的可重入锁源码学习之lua脚本加锁逻辑.assets/lua加锁脚本多次执行lock.png" alt="lua加锁脚本多次执行lock" style="zoom:50%;" />
+
+解释：
+
+因此"testLock"已经执行过加锁命令了，所以执行
+
+```
+exists testLock
+```
+
+会返回1，因此，再次对"testLock"再次执行加锁命令，不会走第一部分的代码。
+
+我们来看第二部分的代码：
+
+执行：
+
+```bash
+hexists testLock jk6b27a7-5346-483a-b9b5-0957c690c27f:1
+```
+
+由于第一次已经成功加锁了，因此这里会返回1，则会执行：
+
+```bash
+hincrby testLock jk6b27a7-5346-483a-b9b5-0957c690c27f:1 1
+```
+
+hincrby 命令用于为哈希表中的字段值加上指定增量值，因此执行完hincrby命令后，"testLock"的数据结构大概变成这样：
+
+```json
+"testLock" : {
+	"jk6b27a7-5346-483a-b9b5-0957c690c27f:1" : 2
+}
+```
+
+然后执行：
+
+```bash
+pexpire testLock jk6b27a7-5346-483a-b9b5-0957c690c27f:1
+```
+
+将 "testLock"这把锁的存活时间重新设置为 30000 毫秒。
+
+执行多次加锁命令，则 jk6b27a7-5346-483a-b9b5-0957c690c27f:1 对应的值都会累加1。
+
+#### 总结
+
+同一个客户端同一个线程对一个lock可以反复的重复加锁多次，每次加锁和一次释放锁必须是配对的。

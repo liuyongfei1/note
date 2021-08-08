@@ -58,22 +58,9 @@ private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, final l
 
 ttlRemaining不应该是锁的剩余存活时间吗，为什么ttlRemaining等于null就说明锁已经获取到了？
 
-要搞明白这个原因，需要去继续看一下CommandAsyncService类里的evalAsync方法:
+要搞明白这个原因，我们需要去继续回头看一下上一篇中分析的那段加锁的lua脚本:
 
-```java
-private <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-    RPromise<R> mainPromise = createPromise();
-    List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-    args.add(script);
-    args.add(keys.size());
-    args.addAll(keys);
-    args.addAll(Arrays.asList(params));
-    async(readOnlyMode, nodeSource, codec, evalCommandType, args.toArray(), mainPromise, 0, false, null);
-    return mainPromise;
-}
-```
-
-async()方法会与redis进行通信，这是比较偏底层了，我这里就不深入分析了。
+<img src="redisson的可重入锁源码学习之watchdog.assets/lua脚本加锁成功后返回nil.png" alt="lua脚本加锁成功后返回nil" style="zoom:50%;" />
 
 #### 定时调度的任务干了什么事儿
 
@@ -152,12 +139,25 @@ protected RFuture<Boolean> renewExpirationAsync(long threadId) {
 
 ```java
 if (future.getNow()) {
-                            // reschedule itself
-                            scheduleExpirationRenewal(threadId);
-                        }
+  // reschedule itself
+  scheduleExpirationRenewal(threadId);
+}
 ```
 
-因此只要这个客户端当前还持有这把锁，**它会递归执行scheduleExpirationRenewal方法，就会延长锁的存活时间。**
+因此只要future.getNow()为true，则证明这个客户端当前还持有这把锁，**它会递归执行scheduleExpirationRenewal方法，就会延长锁的存活时间。**
 
 否则，就会停止定时调度任务。
 
+### 总结
+
+通过以上源码的分析，可以得出结论，如果持有锁的那台机器宕机了：
+
+- 则那台机器上的watchdog（就是每隔10秒执行一次的定时任务）就不会执行了；
+
+- 则testLock那个锁自动就会在30秒后自动过去，自动释放掉这把锁；
+
+- 此时，其它的客户端最多再等待30秒就可以获取到这把锁了。
+
+  
+
+  
