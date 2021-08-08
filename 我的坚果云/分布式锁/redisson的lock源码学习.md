@@ -2,6 +2,10 @@
 
 我们通过学习开源的redis客户端框架redisson的源码，来学习它是如何实现redis分布式锁的。
 
+### 使用redisson进行加锁
+
+调用redisson的api，可以很方便的实现redis分布式锁，主要代码如下：
+
 ```java
 Config config = new Config();
 
@@ -15,16 +19,16 @@ config.useClusterServers().addNodeAddress("redis://192.168.10.111:6379")
 
 RedissonClient redisson = Redisson.create(config);
 
-RLock lock = redisson.getLock("anyLock");
+RLock lock = redisson.getLock("testLock");
 lock.lock();
 ```
 
-##### getLock()
+### getLock()
 
 1. 这里getLock方法获取到的是RedissonLock对象，它里面封装了一个commandExecutor，可以执行一些redis的底层命令，比如set，get的一些操作；
 2. 还有一个internalLockLeaseTime，是跟watch dog有关的，默认是30秒。
 
-##### lock()
+### lock()
 
 lock()方法源码调用树如下：
 
@@ -34,7 +38,7 @@ lock()方法源码调用树如下：
 
 大概解释一下这段lua脚本：
 
-**第一部分**
+#### **第一部分**
 
 ```lua
 if (redis.call('exists', KEYS[1]) == 0) then 
@@ -64,7 +68,7 @@ if (redis.call('exists', KEYS[1]) == 0) then
 
 3. 给我们加的锁 "testLock"设置过期时间。
 
-**第二部分**
+#### **第二部分**
 
 ```lua
 if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then 
@@ -94,15 +98,16 @@ if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then
 
 4. 其实就是执行pttl指令，得到当前key的存活周期，并返回。
 
-##### commandExecutor.evalWriteAsync
+#### commandExecutor.evalWriteAsync
 
-看完这段lua脚本后，我们再来看这个evalWriteAsync()方法：
+看完这段lua脚本后，我们再来看这个evalWriteAsync方法：
 
 ```java
 @Override
 public <T, R> RFuture<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
     // 获取Master实例，lua脚本将会在这个实例上执行(下面会详细介绍)
     NodeSource source = getNodeSource(key);
+    // 与redis进行通信，执行lua脚本(下面会详细介绍)
     return evalAsync(source, false, codec, evalCommandType, script, keys, params);
 }
 
@@ -113,9 +118,10 @@ private NodeSource getNodeSource(String key) {
     }
 ```
 
-getNodeSource方法会根据我们的redis加锁key去从我们的redis集群中获取其中1个实例做为NodeSource。
+- getNodeSource方法会根据我们的redis加锁key去从我们的redis集群中获取其中1个实例做为NodeSource；
+- evalAsync方法就是与redis进行通信，执行lua脚本，完成加锁操作。
 
-##### redis的slot
+#### redis的slot
 
 无论你创建一个多大的redis集群，redis都会将存储空间划分为16384 个slot，可以从MasterSlaveConnectionManager类里看到：
 
@@ -125,7 +131,7 @@ public static final int MAX_SLOT = 16384;
 
 它们会平均的分配在各个master实例上。
 
-##### 由redis key计算出slot
+#### 由redis key计算出slot
 
 接着看calcSlot方法：
 
@@ -150,7 +156,7 @@ public static final int MAX_SLOT = 16384;
 
 根据传进来的key，会计算出来一个hash值，然后将这个hash值对 16384 取模，然后就可以得到当前的key对应的是哪个slot，比如计算出来的slot为 12343。
 
-##### 由slot获取所属的master实例
+#### 由slot获取所属的master实例
 
 ```java
 MasterSlaveEntry entry = connectionManager.getEntry(slot);
@@ -160,7 +166,43 @@ MasterSlaveEntry entry = connectionManager.getEntry(slot);
 
 比如编号为12343的slot所在的master是：redis://192.168.10.111:6381。
 
-此时，我们就知道了，上面分析的那段lua脚本，是放在 **redis://192.168.10.111:6381** 这个master实例上执行的，完成加锁操作。
+此时，我们就知道了，上面分析的那段lua脚本，是要放在 **redis://192.168.10.111:6381** 这个master实例上执行的，从而完成加锁操作。
+
+#### 执行lua脚本，完成加锁
+
+主要看这个方法：
+
+```java
+return evalAsync(source, false, codec, evalCommandType, script, keys, params);
+```
+
+主要参数介绍：
+
+- source：就是已经获取到的将要执行lua脚本的那台master实例；
+
+- script：即为我们已经分析过的lua脚本；
+
+- keys：即为加锁的key："testLock"；
+
+- params：包括：
+
+  -  internalLockLeaseTime： 30000 毫秒（**说明redisson加锁，其实不是无限制不停的可以拥有这把锁的，默认情况下设置的一把锁的有效期就是 30s**）；
+
+  - getLockName(threadId)：见RessionLock类：
+
+    ```
+    final UUID id;
+    protected String getLockName(long threadId) {
+            return id + ":" + threadId;
+        }
+    ```
+
+    可以得出结论：
+
+    - 该方法返回的是 UUID 和当前线程id拼接的字符串；
+    - 它是一个客户端的一个线程的唯一标识，也就是这个客户端的这个线程对这个key进行了加锁操作。
+
+evalAsync方法通过传入的这些参数，会与redis进行通信，执行lua脚本，进行加锁。比较偏底层一些，这里就不再详细介绍了。
 
 
 

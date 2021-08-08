@@ -2,7 +2,7 @@
 
 ### 编程式事务
 
-之前我们自己调用JDBC的api去管理实物时，经常是要写类似这样的代码：
+之前我们自己调用JDBC的api去管理事务时，经常是要写类似这样的代码：
 
 ```java
 import java.sql.Connection;
