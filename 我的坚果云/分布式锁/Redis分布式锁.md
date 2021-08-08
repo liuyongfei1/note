@@ -62,3 +62,19 @@ lock.tryLock(100,10, TimeUnit.SECONDS);
 8. 持有锁超时释放锁。
 
 这8个机制组合在一起，才是构成了一个企业级的基于redis的分布式锁的方案。
+
+#### redisson分布式锁的隐患
+
+1. redis加锁，本质上就是在redis集群中挑选一个master实例来加锁；
+
+2. 每一个master都挂载了一个slave实例，实现搞可用的机制，如果master宕机，slave就会自动切换为master。
+
+但是还是会有一个老生常谈的问题：
+
+假设客户端刚刚在master写入一个锁，此时发生了master的宕机，但是master还没来得及将那个锁key异步同步了slave，slave就切换为新的master。
+
+此时别的客户端在新的master上也尝试获取同一个锁，成功获取到锁。
+
+这时就会出现两个客户端，都会获取同一把分布式锁，可能有的时候就会导致一些数据的问题。
+
+redisson的分布式锁，隐患主要就在这里。
