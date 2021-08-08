@@ -1,4 +1,4 @@
-## redis分布式锁：可重入锁源码学习之lua脚本加锁 
+## redis分布式锁：可重入锁源码学习之lua脚本加锁    
 
 我们通过学习开源的redis客户端框架redisson的源码，来学习它是如何实现redis分布式锁的。
 
@@ -96,7 +96,7 @@ if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then
    (integer) 1
    ```
 
-4. 其实就是执行pttl指令，得到当前key的存活周期，并返回。
+4. 其实就是执行pttl指令，得到当前key的存活周期。当lua脚本执行完成后将这个存活周期返回，RFuture的监听器就会被触发执行，来执行后续的逻辑。
 
 #### commandExecutor.evalWriteAsync
 
