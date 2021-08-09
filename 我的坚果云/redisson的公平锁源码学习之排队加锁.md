@@ -80,3 +80,37 @@ lindex redisson_lock_queue:{testLock} 0
 
 因此这个大判断条件成立，则执行：
 
+```bash
+lpop redisson_lock_queue:{testLock}
+```
+
+由于此时队列还是空的，所以这一步什么也不会干。
+
+```bash
+zrem redisson_lock_timeout:{testLock} UUID:threaId
+```
+
+从set集合中删除 UUID:threaId，此时因为这个set集合是空的，所以什么都不会干。
+
+```bash
+hset testLock UUID:threaId 1
+```
+
+执行加锁，则会生成这一个hash数据：
+
+testLock: {
+
+  "UUID:threaId" : 1,
+
+} 
+
+```
+pexpire testLock 30000
+```
+
+将这个锁的存活时间设置为30秒。
+
+然后返回一个nil，外层代码就会认为加锁成功了，此时就会开启一个watchdog定时调度的程序，每隔10秒判断一下，当前这个线程是否还持有这个锁，如果是，则刷新这个锁key对应的生存时间为30秒。
+
+
+
