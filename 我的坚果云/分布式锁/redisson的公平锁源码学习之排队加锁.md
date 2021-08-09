@@ -12,7 +12,7 @@
 
 可重入非公平锁、公平锁，他们在整体的技术实现上都是一样的，只不过唯一不同的点就是在加锁逻辑那。
 
-### 源码学习
+### 首次加锁
 
 RedissonFairLock是RedissonLock的子类，整体锁的技术框架实现都是跟之前讲解的RedissonLock是一样的，无非就是重载了一些方法，加锁和释放锁的lua脚本逻辑比之前复杂了。
 
@@ -112,5 +112,83 @@ pexpire testLock 30000
 
 然后返回一个nil，外层代码就会认为加锁成功了，此时就会开启一个watchdog定时调度的程序，每隔10秒判断一下，当前这个线程是否还持有这个锁，如果是，则刷新这个锁key对应的生存时间为30秒。
 
+此时，客户端A首次加锁成功。那么如果这时有其它的客户端来尝试加锁，如何进行排队呢？
 
+### 客户端B来尝试加锁，如何排队
+
+继续看lua脚本。
+
+#### 第一部分
+
+进入 while true死循环，执行：
+
+```bash
+lindex redisson_lock_queue:{testLock} 0
+```
+
+获取队列的第一元素，由于此时队列仍是空，所以这里什么也获取不到，返回false，退出死循环。
+
+#### 第二部分
+
+执行:
+
+```ba&#39;h
+exists testLock
+```
+
+由于客户端A已经使用该key进行加锁了，因此这个条件肯定就不成立了。然后接着看第二部分的第二个if判断：
+
+```bash
+hexists testLock UUID:threaId
+```
+
+当前客户端当前线程由于不在testLock这个map中，所以这个条件也不成立。接着看第三部分。
+
+#### 第三部分
+
+这部分是等待加锁客户端排队的主要逻辑。
+
+```bash
+lindex redisson_lock_queue:{testLock} 0
+```
+
+从这个队列中取出第一个元素，由于此时队列是空的，因此会返回 false。
+
+执行：
+
+```bash
+pttl testLock
+```
+
+获取 testLock 剩余的生存时间。
+
+设置一个timeout变量：
+
+```
+local timeout = ttl + tonumber(ARGV[3]);
+```
+
+timeout等于 ttl + currentTime + threadWaitTime，假设 ttl 为20毫秒，则timeout等于：
+
+20 毫秒 + 10:00:00 + 5 毫秒 = 10:00:25。
+
+执行：
+
+```
+zadd redisson_lock_timeout:{testLock} 10:00:25 UUID_02:threaId_02
+```
+
+会在 redisson_lock_timeout:{testLock}这个set集合中插入一个元素（UUID_02:threaId_02），这个元素对应的分钟数是：10:00:25（实际存储时是存储的long类型的一个时间戳）。
+
+set集合是一个有序集合，会自动根据你插入的元素的分钟数自动从小到大排序。
+
+然后执行：
+
+```bash
+rpush redisson_lock_queue:{testLock} UUID_02:threaId_02
+```
+
+会把 UUID_02:threaId_02 插入到队列的头部。
+
+最后返回 ttl，也就是testLock这把锁的剩余生存时间。如果返回的ttl是一个数值的话，那么此时客户端B就会进入一个while true的死循环，每隔一段时间就去尝试加锁，重新执行这段lua脚本。
 
