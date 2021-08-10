@@ -98,11 +98,15 @@ hset testLock UUID:threaId 1
 
 执行加锁，则会生成这一个hash数据：
 
+```json
 testLock: {
 
   "UUID:threaId" : 1,
 
 } 
+```
+
+执行：
 
 ```
 pexpire testLock 30000
@@ -188,7 +192,105 @@ set集合是一个有序集合，会自动根据你插入的元素的分钟数�
 rpush redisson_lock_queue:{testLock} UUID_02:threaId_02
 ```
 
-会把 UUID_02:threaId_02 插入到队列的头部。
+会把 UUID_02:threaId_02 插入到队列。
 
 最后返回 ttl，也就是testLock这把锁的剩余生存时间。如果返回的ttl是一个数值的话，那么此时客户端B就会进入一个while true的死循环，每隔一段时间就去尝试加锁，重新执行这段lua脚本。
+
+### 客户端C也来尝试加锁，如何排队
+
+假设客户端C来尝试加锁的时间为10:00:05。
+
+#### 第一部分
+
+while true循环，执行：
+
+```bash
+lindex redisson_lock_queue:{testLock} 0
+```
+
+获取队列redisson_lock_queue:{testLock}中的第一个元素UUID_02:thread_02（也就是刚刚在排队的客户端B）。
+
+执行：
+
+```bash
+zscore redisson_lock_timeout:{testLock} UUID_02:thread_02
+```
+
+从 set集合redisson_lock_timeout:{testLock}中取出UUID_02:thread_02的分钟数10:00:25，并将值赋给timeout。
+
+接下来看这个if条件：
+
+```lua
+if timeout <= tonumber(ARGV[4]) then 
+```
+
+由于10:00:25 不小于等于 10:00:05（客户端C尝试加锁的时间），因此这个if条件不成立。接下来看第二部分的代码。
+
+#### 第二部分
+
+```bash
+if (redis.call('exists', KEYS[1]) == 0) and ((redis.call('exists', KEYS[2]) == 0) "
+      + "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then" 
+```
+
+由于存在 testLock锁，因此第一个小判断条件不成立；
+
+且当前队列的第一个元素是 UUID_:thread，肯定不等于当前的UUID_02:thread_02，因此这个大判断条件肯定不成立。
+
+```lua
+if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then 
+```
+
+执行：
+
+```bash
+hexists testLock UUID_02:thread_02
+```
+
+由于客户端C是首次来尝试加锁，所以这里肯定返回 0，这个条件也不成立。进入第三部分。
+
+#### 第三部分
+
+```lua
+local firstThreadId = redis.call('lindex', KEYS[2], 0); 
+```
+
+从队列当中获取第一个元素：UUID_02:thread_02。
+
+```lua
+if firstThreadId ~= false and firstThreadId ~= ARGV[2] then 
+  ttl = tonumber(redis.call('zscore', KEYS[3], firstThreadId)) - tonumber(ARGV[4]);
+```
+
+如果 firstThreadId 不等于false，且排在当前队列的第一个并不是当前尝试加锁的客户端，则：
+
+执行：
+
+```bash
+zscore redisson_lock_timeout:{testLock} UUID_02:thread_02
+```
+
+则 ttl = 取出对应的分钟数10:00:25 - 减去 10:00:05 = 20 毫秒。
+
+```
+local timeout = ttl + tonumber(ARGV[3]);
+```
+
+timeout = 20 毫秒 + currentTime + threadWaitTime = 20 毫秒 + 10:00:05 + 5 毫秒 = 10:00:30。
+
+执行：
+
+```
+zadd redisson_lock_timeout:{testLock} 10:00:30 UUID_03:thread_03
+```
+
+会在set集合redisson_lock_timeout中插入一个元素UUID_03:thread_03，对应的分钟数为10:00:30。set集合会按照分钟数大小有序排列。
+
+执行：
+
+```
+rpush redisson_lock_queue:{testLock} UUID_03:thread_03
+```
+
+会把 UUID_03:thread_03 插入队列 redisson_lock_queue:{testLock} 的尾部。
 
