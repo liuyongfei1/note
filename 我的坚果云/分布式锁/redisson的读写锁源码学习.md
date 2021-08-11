@@ -1,6 +1,6 @@
 ## redisson的读写锁源码学习
 
-### 读写锁
+### 读锁
 
 - 多个客户端同时加读锁，是不会互斥的；
 - 如果有人加了读锁，则这时就不能加写锁了，任何人都不能加写锁，读锁和写锁时互斥的；
@@ -118,3 +118,33 @@ watchdog主要干了两件事儿：
 
 - 判断当前线程，如果还持有这把锁，则刷新生存时间为30秒；
 - 同时还会遍历加锁次数，对那个锁key的每次加锁对应的一个rwlock_timeout也重新设置存活时间为30秒。
+
+### 写锁
+
+写锁的比较简单。
+
+KEYS[1] = anyLock
+
+ARGV[1] = 30000
+
+ARGV[2] = UUID_01:threadId_01:write
+
+hget anyLock mode write，此时肯定是没有的，因为根本还没有这个锁
+
+然后：
+
+hset anyLock mode write
+
+hset anyLock UUID_01:thread_01:write 1
+
+pexpire anyLock 30000
+
+这样一个写锁就加成功了：
+
+```json
+anyLock: {
+	"mode": "write",
+	"UUID_01:threaId_01:write": 1
+}
+```
+
