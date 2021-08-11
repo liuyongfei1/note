@@ -79,3 +79,65 @@ pttl anyLock
 
 同一个客户端同一个线程先加读锁再加写锁是互斥的。
 
+### 同一个客户端同一线程，先加写锁再加读锁
+
+先加一次写锁：
+
+```
+anyLock: {
+	"mode": "write",
+	"UUID_01:thread_01:write": 1
+}
+```
+
+再来加一次读锁：
+
+#### 参数
+
+- KEYS[1]：anyLock
+- KEYS[2]：{anyLock}:UUID_01:thread_01:rwlock_timeout
+- ARGV[1]：30000毫秒
+- ARGV[2]：UUID_01:thread_01
+- ARGV[3]：UUID_01:thread_01:write
+
+#### 脚本解释
+
+执行
+
+```
+hget anyLock mode
+```
+
+由于之前加的是写锁，所以这里返回write，看第二个判断条件：
+
+```lua
+"if (mode == 'read') or (mode == 'write' and redis.call('hexists', KEYS[1], ARGV[3]) == 1) then " +
+                                  "local ind = redis.call('hincrby', KEYS[1], ARGV[2], 1); " + 
+                                  "local key = KEYS[2] .. ':' .. ind;" +
+                                  "redis.call('set', key, 1); " +
+                                  "redis.call('pexpire', key, ARGV[1]); " +
+                                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                                  "return nil; " +
+                                "end;"
+```
+
+hexists anyLock UUID_01:thread_01 存在，也就是说是同一个客户端同一个线程，所以返回1，继续执行：
+
+```
+hincrby anyLock UUID_01:thread_01 1
+
+set {anyLock}:UUID_01:thread_01:rwlock_timeout:1 1
+
+pexpire anyLock 30000
+
+pexpire  {anyLock}:UUID_01:thread_01:rwlock_timeout 30000
+```
+
+返回 nil，加锁成功。
+
+#### 结论
+
+同一个客户端同一个线程，先加了一个写锁，再加读锁是可以成功的，也就是说默认在同一个线程写锁的期间，可以多次加读锁。
+
+
+
