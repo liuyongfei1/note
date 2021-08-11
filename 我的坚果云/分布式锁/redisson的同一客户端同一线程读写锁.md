@@ -137,7 +137,50 @@ pexpire  {anyLock}:UUID_01:thread_01:rwlock_timeout 30000
 
 #### 结论
 
-同一个客户端同一个线程，先加了一个写锁，再加读锁是可以成功的，也就是说默认在同一个线程写锁的期间，可以多次加读锁。
+**同一个客户端同一个线程，先加了一个写锁，再加读锁是可以成功的，也就是说默认在同一个线程写锁的期间，可以多次加读锁。**
 
+### 同一个客户端同一个线程先加写锁，再加写锁
 
+先加一次写锁：
 
+```
+anyLock: {
+	 "mode": "write",
+	"UUID_01:thread_01:write" : 1,
+}
+```
+
+再来加一次写锁：
+
+```lua
+"if (mode == 'write') then " +
+    "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+        "redis.call('hincrby', KEYS[1], ARGV[2], 1); " + 
+        "local currentExpire = redis.call('pttl', KEYS[1]); " +
+        "redis.call('pexpire', KEYS[1], currentExpire + ARGV[1]); " +
+        "return nil; " +
+    "end; " +
+  "end;"
+```
+
+hexists anyLock UUID_01:thread_01:write ，存在返回1，继续执行：
+
+```
+hincrby anyLock UUID_01:thread_01:write 1
+pexpire anyLock 50000
+```
+
+生成新的数据结构：
+
+```
+anyLock: {
+	"mode": "write",
+	"UUID_01:thread_01:write": 2
+}
+```
+
+然后返回nil，加锁成功。
+
+#### 结论
+
+可以看到，同一客户端同一线程是可以重入加锁的，读写锁其实也是一种可重入锁。
