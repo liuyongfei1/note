@@ -54,11 +54,3 @@ protected long calcLockWaitTime(long remainTime) {
 ​       如果第二个lock又加锁失败，则failedLocksLimit-- 就等于0，那么就会标记为加锁失败，RedLock加锁失败。
 
 3. 也就是说针对多个lock进行加锁，每个lock都有一个 1500毫秒的加锁超时时间，如果在4500毫秒内，成功的对 n/2 +1 个lock加锁成功了，就算这个RedLock加锁成功了。
-
-### 读写锁
-
-多个客户端同时加读锁，是不会互斥的。多个客户端可以同时加这个读锁。
-
-加读锁的lua脚本逻辑
-
-.. 就是做字符串的拼接
