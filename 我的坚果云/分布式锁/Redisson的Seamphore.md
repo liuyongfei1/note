@@ -1,4 +1,4 @@
-## Redisson的Seamphore
+## Redisson的semaphore
 
 ### 简单实用
 
@@ -40,7 +40,7 @@ final RSemaphore semaphore = redisson.getSemaphore("semaphore");
 
 ### 源码分析
 
-RedissonSeamphore类：
+Redissonsemaphore类：
 
 ```lua
 @Override
@@ -94,17 +94,17 @@ public boolean tryAcquire(int permits) {
     }
 ```
 
-get seamphore  = 1
+get semaphore  = 1
 
 1 >= 1
 
-val = decrby seamphore 1 将信号量允许获取锁的客户端的数量递减1，变成了2
+val = decrby semaphore 1 将信号量允许获取锁的客户端的数量递减1，变成了2
 
 返回1。
 
 来一个客户端，申请加锁，val就会减掉1
 
-当 seamphore 变为0时，get seamphore 为0，if判断条件不成立，直接返回0，进入while true死循环：
+当 semaphore 变为0时，get semaphore 为0，if判断条件不成立，直接返回0，进入while true死循环：
 
 ```java
 try {
@@ -120,7 +120,7 @@ try {
         }
 ```
 
-不断的尝试去获取这个 seamphore锁，直到有其它客户端释放锁，才能获取到这个锁。
+不断的尝试去获取这个 semaphore锁，直到有其它客户端释放锁，才能获取到这个锁。
 
 ### release()方法
 
@@ -143,8 +143,8 @@ try {
     }
 ```
 
-会将 seamphore 加1
+会将 semaphore 加1
 
-incrby seamphore 1，这样就会退出while true死循环，其它客户端就可以尝试获取这个锁了。
+incrby semaphore 1，这样就会退出while true死循环，其它客户端就可以尝试获取这个锁了。
 
-获取到之后再将 seamphore 递减1。
+获取到之后再将 semaphore 递减1。
