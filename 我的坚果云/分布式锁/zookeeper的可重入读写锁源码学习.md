@@ -152,6 +152,7 @@ public PredicateResults getsTheLock(CuratorFramework client, List<String> childr
     validateOurIndex(sequenceNodeName, ourIndex);
 
     boolean         getsTheLock = ourIndex < maxLeases;
+    // 如果getsTheLock为false，则会通过outerIndex-maxLeases 获得上一个节点
     String          pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
 
     return new PredicateResults(pathToWatch, getsTheLock);
@@ -188,3 +189,72 @@ else
 #### 总结
 
 除非前面的读锁释放成功了，写锁才能被唤醒后尝试加写锁成功。
+
+### 写锁+读锁
+
+#### 简单使用
+
+先加写锁，再尝试加读锁：
+
+```java
+InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/locks/lock_01");
+lock.writeLock().acquire();
+lock.readLock().acquire();
+```
+
+children：
+
+[
+
+0 = "_c_e1dee7a7-c820-47b2-8abd-bb41079b057f-__WRIT__0000000031"
+1 = "_c_38094ad5-61be-4931-9494-2c9f291ad2b5-__READ__0000000032"
+
+]
+
+InterProcessReadWriteLock类：
+
+```java
+private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
+{
+    if ( writeMutex.isOwnedByCurrentThread() )
+    {
+        return new PredicateResults(null, true);
+    }
+```
+
+如果要加写锁的是同一个客户端，则允许加锁。同一个客户端写锁和读锁不互斥。
+
+如果是不同的客户端，则：
+
+```java
+for ( String node : children )
+{
+    if ( node.contains(WRITE_LOCK_NAME) )
+    {
+        firstWriteIndex = Math.min(index, firstWriteIndex);
+    }
+    else if ( node.startsWith(sequenceNodeName) )
+    {
+        ourIndex = index;
+        break;
+    }
+
+    ++index;
+}
+```
+
+如果children里包含写锁，则：
+
+firstWriteIndex = 0，ourIndex =1。
+
+```java
+boolean     getsTheLock = (ourIndex < firstWriteIndex);
+```
+
+1 < 1，肯定不成立，加写锁失败。
+
+##### 总结
+
+- 如果是同一个客户端，先加写锁，再加读锁是非互斥的，可以加锁；
+
+- 不同的客户端，先加写锁，再加读锁是互斥的，此时一律不让加读锁，加锁失败了，就wait等待。
