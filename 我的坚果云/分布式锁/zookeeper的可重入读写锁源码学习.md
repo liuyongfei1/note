@@ -258,3 +258,55 @@ boolean     getsTheLock = (ourIndex < firstWriteIndex);
 - 如果是同一个客户端，先加写锁，再加读锁是非互斥的，可以加锁；
 
 - 不同的客户端，先加写锁，再加读锁是互斥的，此时一律不让加读锁，加锁失败了，就wait等待。
+
+### 写锁+写锁
+
+```java
+private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
+{
+    if ( writeMutex.isOwnedByCurrentThread() )
+    {
+        return new PredicateResults(null, true);
+    }
+
+    int         index = 0;
+    int         firstWriteIndex = Integer.MAX_VALUE;
+    int         ourIndex = Integer.MAX_VALUE;
+    for ( String node : children )
+    {
+        if ( node.contains(WRITE_LOCK_NAME) )
+        {
+            firstWriteIndex = Math.min(index, firstWriteIndex);
+        }
+        else if ( node.startsWith(sequenceNodeName) )
+        {
+            ourIndex = index;
+            break;
+        }
+
+        ++index;
+    }
+    StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
+
+    boolean     getsTheLock = (ourIndex < firstWriteIndex);
+    String      pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
+    return new PredicateResults(pathToWatch, getsTheLock);
+}
+```
+
+由于第一个加锁的是写锁，第二个加锁的也是写锁，所以
+
+```java
+if ( node.contains(WRITE_LOCK_NAME) )
+else if ( node.startsWith(sequenceNodeName) )
+        {
+            ourIndex = index;
+            break;
+        }
+```
+
+这两个判断都不成立，ourIndex（Integer.MAX_VALUE） < firstWriteIndex （Integer.MAX_VALUE）不成立，返回false，加写锁失败。
+
+#### 总结
+
+写锁 + 写锁 是互斥的。
