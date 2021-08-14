@@ -261,52 +261,56 @@ boolean     getsTheLock = (ourIndex < firstWriteIndex);
 
 ### 写锁+写锁
 
+第一次加写锁：
+
+![image-20210813235727439](zookeeper的可重入读写锁源码学习.assets/image-20210813235727439.png)
+
+![image-20210813235859116](zookeeper的可重入读写锁源码学习.assets/image-20210813235859116.png)
+
+getsTheLock为true，第一次加写锁成功。
+
+接着看第二次加写锁：
+
+![image-20210814000158276](zookeeper的可重入读写锁源码学习.assets/image-20210814000158276.png)
+
+如果是同一线程，由于此时lockData不为null，
+
+![image-20210814000825975](zookeeper的可重入读写锁源码学习.assets/image-20210814000825975.png)
+
+lockData的lockCount累加1，变为2，然后返回true，加写锁成功。
+
+如果是另一个客户端来请求加写锁呢？
+
+![image-20210814001154867](zookeeper的可重入读写锁源码学习.assets/image-20210814001154867.png)
+
+##### 参数解释
+
+此时children会有两个顺序节点，比如：
+
+[
+
+/locks/lock_01/_c_7a66d58a-21df-42a1-8659-1e10cedd6843-__WRIT__0000000051,
+
+/locks/lock_01/_c_7a66d58a-21df-42a1-8659-1e10cedd6843-__WRIT__0000000052
+
+]
+
+sequenceNodeName： /locks/lock_01/_c_7a66d58a-21df-42a1-8659-1e10cedd6843-__WRIT__0000000052
+
+maxLeases：1
+
+则：
+
+ourIndex = 1
+
 ```java
-private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
-{
-    if ( writeMutex.isOwnedByCurrentThread() )
-    {
-        return new PredicateResults(null, true);
-    }
-
-    int         index = 0;
-    int         firstWriteIndex = Integer.MAX_VALUE;
-    int         ourIndex = Integer.MAX_VALUE;
-    for ( String node : children )
-    {
-        if ( node.contains(WRITE_LOCK_NAME) )
-        {
-            firstWriteIndex = Math.min(index, firstWriteIndex);
-        }
-        else if ( node.startsWith(sequenceNodeName) )
-        {
-            ourIndex = index;
-            break;
-        }
-
-        ++index;
-    }
-    StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
-
-    boolean     getsTheLock = (ourIndex < firstWriteIndex);
-    String      pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
-    return new PredicateResults(pathToWatch, getsTheLock);
-}
+boolean         getsTheLock = ourIndex < maxLeases;
 ```
 
-由于第一个加锁的是写锁，第二个加锁的也是写锁，所以
+1 < 1，不成立，getsTheLock为false，加写锁失败。
 
-```java
-if ( node.contains(WRITE_LOCK_NAME) )
-else if ( node.startsWith(sequenceNodeName) )
-        {
-            ourIndex = index;
-            break;
-        }
-```
+##### 结论
 
-这两个判断都不成立，ourIndex（Integer.MAX_VALUE） < firstWriteIndex （Integer.MAX_VALUE）不成立，返回false，加写锁失败。
+1. 同一个客户端可以多次加写锁，不互斥，代表加锁次数的count会累加；
+2. 不同的客户端加写锁互斥，只有前面的客户端释放掉写锁后，等顺序待排队的那个客户端才能加写锁。
 
-#### 总结
-
-写锁 + 写锁 是互斥的。
