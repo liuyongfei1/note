@@ -103,3 +103,28 @@ public boolean acquire(long time, TimeUnit unit) throws Exception
 
 - 遍历locks，对每个lock进行加锁；
 - 在这个过程中，一旦有一个加锁失败，就依次遍历之前已经加过的锁，并释放掉。
+
+### 实际开发中的使用场景
+
+比如在电商系统中下订单的时候，就非常适合使用MutiLock来解决库存超卖的问题：
+
+```java
+OrderInfoDTO order = orderVO.clone(OrderInfoDTO.class,CloneDirection.FORWARD);
+// 获取分布式锁，解决库存超卖的问题。
+CuratorFramework client = CuratorClient.getInstance();
+List<InterProcessLock> locks = new ArrayList<>();
+for (OrderItemDTO item : order.getItems()) {
+    InterProcessLock lock = new InterProcessMutex(client,"/locks/stock_lock_" + item.getGoodsSkuId());
+    locks.add(lock);
+}
+InterProcessMultiLock multiLock = new InterProcessMultiLock(locks);
+
+// 这样一次性的把这个订单的相关的所有商品全都锁上，如果没有获取到锁，就会一直等待
+multiLock.acquire();
+
+OrderInfoDTO resultOrder = orderInfoService.save(order);
+
+// 处理完逻辑后释放锁，这时如果别的机器对相同的商品下订单就会获取到锁。
+multiLock.release();
+```
+
