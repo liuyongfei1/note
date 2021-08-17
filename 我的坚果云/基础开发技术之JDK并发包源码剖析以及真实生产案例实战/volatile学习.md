@@ -85,3 +85,4 @@ private volatile static int flag = 0;
 - Thread1已经将 flag = true 设置好了；
 - Thread0，比如说在一段时间内还是读到 flag = false。在一小段时间内范围，可能Threa0会感知不到Thread1对Threa0的修改。
 - volatile这个东西，没那么高深，其实很简单，他是并发编程里很常见的一个，只要开了多个线程，一定会有这种问题，某个线程修改一个变量值，其他线程要立刻感知这个值的变化，这时就得用volatile。
+
