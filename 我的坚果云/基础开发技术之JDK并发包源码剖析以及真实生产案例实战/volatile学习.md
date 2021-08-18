@@ -152,3 +152,81 @@ public class DoubleCheckSingleton {
 
 解决办法：给 instance加上 volatile 关键字即可，保证线程的可见性。
 
+#### 实战场景1
+
+register-client项目 优雅的关闭微服务
+
+Register-client里有个 shutdown方法：
+
+```java
+/**
+ * 关闭registerClient组件
+ */
+public void shutdown() {
+    this.finishedRunning = false;
+    heartbeatWorker.interrupt();
+}
+```
+
+这个地方就是很典型的多线程操作共享变量的场景：
+
+- 有一个线程执行shutdown方法，修改finishedRunning；
+
+- 有一个heartbeat线程，读finishedRunning：
+
+- ```java
+  /**
+   * 心跳线程
+   */
+  private class HeartbeatWorker extends Thread {
+      @Override
+      public void run() {
+          HeartbeatRequest request = new HeartbeatRequest();
+          request.setServerInstanceId(serviceInstanceId);
+  
+          HeartbeatResponse response = null;
+          // 读finishedRunning
+          while (finishedRunning) {
+              try {
+                  response = httpSender.heartbeat(request);
+                  System.out.println("心跳的结果为：【" + response.getStatus() + "】......");
+                  Thread.sleep(30 * 1000);
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
+              }
+          }
+      }
+  }
+  ```
+
+​    既有写，又有读，这时如果不用volatile，就有可能会发生 一个线程执行shutdown方法后，heartbeat线程却一直感知不到finishedRunning被修改为false，照样还一直在执行心跳请求。
+
+##### 解决办法
+
+给 finishedRunning 添加volatile关键字即可：
+
+```java
+/**
+ * 服务是否在运行
+ */
+private volatile Boolean finishedRunning;
+```
+
+#### 实战场景2
+
+Register-server项目：
+
+- 一个线程接收心跳请求，会服务进行续约，实际是对ServerInstance里的Lease的latestHeartbeatTime变量进行写操作；
+- 同时又有监控服务是否存活的后台线程读ServerInstance里的Lease的latestHeartbeatTime变量来判断服务是否存活。
+
+这就存在多个线程对一个共享变量进行读写的问题。
+
+##### 解决办法
+
+同样是给latestHeartbeatTime变量加上volatile关键字即可。
+
+```java
+private class Lease {
+    private volatile Long latestHeartbeatTime = System.currentTimeMillis();
+```
+
