@@ -100,4 +100,21 @@ private volatile static int flag = 0;
 
 第二周27讲，需要再复习一下
 
+volatile的写和读前后会加一些屏障，保证很多指令在一定规则下不会重排。
+
+比如：**LoadLoad屏障**
+
+```
+int age = this.age => 相当于一个 load
+
+LoadLoad屏障
+
+int name = this.name => 相当于一个load
+```
+
+确保load1数据的装载会优先于load2后所有装载指令，意思就是load1和load2对应的代码，是不能指令重排的。   
+
+
+
 第二周28讲（double check的缺陷），需要再复习一下
+
