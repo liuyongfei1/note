@@ -114,7 +114,41 @@ int name = this.name => 相当于一个load
 
 确保load1数据的装载会优先于load2后所有装载指令，意思就是load1和load2对应的代码，是不能指令重排的。   
 
-
+#### double check的单例模式安全吗
 
 第二周28讲（double check的缺陷），需要再复习一下
+
+常见的doublie check单例模式：
+
+```java
+public class DoubleCheckSingleton {
+    private static DoubleCheckSingleton instance;
+
+    private DoubleCheckSingleton() {}
+
+    public DoubleCheckSingleton getInstance() {
+        if (instance == null) {
+            // 多个线程会卡在这里
+            synchronized (DoubleCheckSingleton.class) {
+                // 第一个线程进来，发现instance为空，就创建一个实例
+                // 这是第二个线程会进来，如果不加上这个if判断，就会再创建一遍实例。
+                if (instance == null) {
+                    DoubleCheckSingleton.instance = new DoubleCheckSingleton();
+                }
+            }
+            // 第一个线程执行完毕，退出synchronized代码块，会是否synchronized锁
+        }
+        return instance;
+    }
+}
+```
+
+这种单例模式有什么缺陷？
+
+拿Java的内存模型来讲：
+
+- 线程1创建一个实例后，会缓存在自己的工作内存里，并没有强制刷回到主存；
+- 线程2进来之后，获取instance时依然从线程2对应的工作内存里去取，由于instance依然是null，所以，又创建了一遍instance，写入到自己的工作内存里。
+
+解决办法：给 instance加上 volatile 关键字即可，保证线程的可见性。
 
