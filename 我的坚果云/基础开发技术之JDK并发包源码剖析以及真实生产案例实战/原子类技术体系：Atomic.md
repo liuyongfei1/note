@@ -121,3 +121,14 @@ public final int getAndAddInt(Object var1, long var2, int var4) {
 
   <img src="原子类技术体系：Atomic.assets/AtomicInteger源码分析.png" alt="AtomicInteger源码分析" style="zoom:50%;" />
 
+#### 底层CPU指令是如何实现CAS语义的？
+
+最底层，用了一个native方法，是用c语言写的，可以通过发送一些CPU指令来确保说这个CAS的过程是原子性的。
+
+具体是怎么实现的呢？
+
+以前的CPU会通过指定锁定一小块内存，后来进行了优化，可以保证，在同一个时间段内只会有一个线程可以对某小块内存中的数据做CAS操作。
+
+compare =》set，这一系列的步骤，在执行这个步骤的时候，每一个操作都是原子性的，有一个线程在执行compare和set的过程中，其它线程是不能来执行操作的。
+
+通过轻量级的锁小块内存的机制来实现，可以保证并发的性能会好很多。
