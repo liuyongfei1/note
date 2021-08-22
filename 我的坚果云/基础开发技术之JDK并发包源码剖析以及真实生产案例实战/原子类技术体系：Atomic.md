@@ -141,7 +141,11 @@ compare =》set，这一系列的步骤，在执行这个步骤的时候，每�
 
 ##### 无限循环
 
-jdk1.8中的LongAdder来解决，分段CAS的思路。
+jdk1.8中的LongAdder来解决，分段CAS的思路。jdk1.8中新增的关于long类型的一个数据操作工具类。
+
+分段迁移，某一个线程对一个Cell更新的时候，如果出现多次自旋的一个问题，如果他CAS失败了，就会自动迁移段，会去尝试更新别的Cell的值，这样的话就会让一个线程不会盲目的等待一个Cell的值。
+
+<img src="原子类技术体系：Atomic.assets/LongAdder.png" alt="LongAdder" style="zoom:50%;" />
 
 ##### 多变量原子问题
 
