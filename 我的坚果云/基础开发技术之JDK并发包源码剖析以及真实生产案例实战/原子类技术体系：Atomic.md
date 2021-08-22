@@ -132,3 +132,17 @@ public final int getAndAddInt(Object var1, long var2, int var4) {
 compare =》set，这一系列的步骤，在执行这个步骤的时候，每一个操作都是原子性的，有一个线程在执行compare和set的过程中，其它线程是不能来执行操作的。
 
 通过轻量级的锁小块内存的机制来实现，可以保证并发的性能会好很多。
+
+
+
+#### Atomic原子类体系的CAS语义存在的三大缺点分析
+
+##### ABA问题
+
+##### 无限循环
+
+jdk1.8中的LongAdder来解决，分段CAS的思路。
+
+##### 多变量原子问题
+
+一般的AtomicInteger只能保证一个变量的原子性，如果是多个变量呢？这时可以用AtomicReference，这个是封装自定义对象的，多个变量放在一个自定义对象里，然后他会检查这个对象的引用是不是一个。
