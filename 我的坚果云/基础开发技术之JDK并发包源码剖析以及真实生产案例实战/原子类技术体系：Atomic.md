@@ -149,4 +149,28 @@ jdk1.8中的LongAdder来解决，分段CAS的思路。jdk1.8中新增的关于lo
 
 ##### 多变量原子问题
 
-一般的AtomicInteger只能保证一个变量的原子性，如果是多个变量呢？这时可以用AtomicReference，这个是封装自定义对象的，多个变量放在一个自定义对象里，然后他会检查这个对象的引用是不是一个。
+一般的AtomicInteger只能保证一个变量的原子性，如果是多个变量呢？这时可以用AtomicReference。
+
+##### AtomicReference
+
+这个是封装自定义对象的，多个变量放在一个自定义对象里，然后他会检查这个对象的引用是不是一个。
+
+如果很多操作都要对一个变量的引用进行赋值的话，很可能会导致并发冲突的问题，如果要保证原子性的话，推荐用AtomicReference的CAS操作来解决，不会使用加锁的重量级的方式。
+
+
+
+##### AtomicStampedRefence
+
+AtomicStampedRefence比 AtomicReference 多了一个邮戳的概念。
+
+1. 获取到了一个Applications对象（01），还有一个stamp = 0的邮戳；
+
+2. 此时别的线程，反复的修改了几次这个Applications对象，比如：Applications对象（02），stamp = 1；
+
+3. 又修改回了Applications对象（01），stamp = 2；
+4. 尝试CAS操作，发现 stamp = 0 与实际的 stamp = 2 不符合，CAS操作失败；
+5. 再次尝试获取到Application（0）对象，此时 stamp = 2，再次尝试CAS操作成功。
+
+##### 实战场景
+
+Register-server的全量拉取注册表和增量拉取注册表。
