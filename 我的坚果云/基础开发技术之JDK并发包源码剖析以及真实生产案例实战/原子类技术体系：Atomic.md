@@ -174,3 +174,41 @@ AtomicStampedRefence比 AtomicReference 多了一个邮戳的概念。
 ##### 实战场景
 
 Register-server的全量拉取注册表和增量拉取注册表。
+
+#### AtomicLong
+
+##### 实战场景
+
+register-client使用 AtomicLong 来解决 客户端拉取注册表的版本错乱问题。
+
+```java
+/**
+ * 注册表版本号
+ */
+private AtomicLong applicationVersion = new AtomicLong(0L);
+
+/**
+	 * 拉取全量注册表到本地
+	 *
+	 * 一定要在发起网络请求之前拿到这个版本号
+	 * 接着在这里发起网络请求，此时可能会有别的线程来修改这个注册表，更新版本
+	 * 如果在这个期间，有人修改过注册表，版本不一样了，此时if就直接不成立了。这样就不会把你拉取到的旧版本的注册表给设置进去。
+	 *
+	 * 必须得是你发起网络请求之后，这个注册表的版本没有被修改过，你才能将新拉取到的注册表给设置进去。
+	 */
+	private void fetchFullRegistry() {
+		Long expectedVersion = applicationVersion.get();
+		Applications fetchedApplications = httpSender.fetchFullRegistry();
+
+		if (applicationVersion.compareAndSet(expectedVersion, expectedVersion + 1)) {
+			while (true) {
+				Applications expectedApplications = applications.getReference();
+				int expectedStamp = applications.getStamp();
+				if (applications.compareAndSet(expectedApplications, fetchedApplications, expectedStamp,
+						expectedStamp + 1)) {
+					break;
+				}
+			}
+		}
+	}
+```
