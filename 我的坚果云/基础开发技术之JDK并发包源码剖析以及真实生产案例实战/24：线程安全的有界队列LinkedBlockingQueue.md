@@ -2,6 +2,8 @@
 
 ### 源码分析
 
+参考文章：https://blog.csdn.net/tonywu1992/article/details/83419448
+
 #### 1.属性
 
 ```java
@@ -303,6 +305,28 @@ size直接通过CAS+ volatile，拿到的基本是比较准备的一个值。
 LinkedBlockingQueue是一个阻塞队列，内部由两个ReentrantLock来实现出入队列的线程安全。由各自的Condition对象来实现线程的await和signal来实现等待和唤醒功能。
 
 它和ArrayBlockingQueue的不同之处在于：
+
+1. 队列的大小有所不同：
+
+- ArrayBlockingQueue是有界的，初始化时必须指定初始值大小；
+
+- LinkedBlockingQueue在初始化的时候可以指定初始值大小，也可以不指定。当添加速度大于移除速度时，在无界的情况下，有可能会造成内存溢出问题。
+
+2.数据存储容器不同：
+
+- ArrayBlockingQueue 采用的是数组做为存储容器，因此在插入或删除元素时不会产生或销毁任何额外的对象实例；
+- 而LinkedBlockingQueue是链表做为存储容器，在插入或删除元素时会产生一个额外的Node对象。在长时间需要高并发处理大批量的数据时，对于GC可能会存在影响；
+
+3.两者实现的队列添加或移除的锁不一样：
+
+- ArrayBlockingQueue中添加或移除元素是用同一个ReentrantLock锁；
+- 而LinkedBlockingQueue实现的队列中的锁是分离的，添加是用putLock锁，删除是用takeLock锁，这样能大大提高队列的吞吐量。也意味着在高并发的情况下生产者和消费者可以并行的操作队列中的数据，以此来提高整个队列的并发性能。
+
+
+
+
+
+
 
 
 
