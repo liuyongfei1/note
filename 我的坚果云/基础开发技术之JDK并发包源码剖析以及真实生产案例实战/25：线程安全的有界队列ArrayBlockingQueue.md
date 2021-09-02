@@ -63,5 +63,18 @@ private E dequeue() {
     }
 ```
 
+#### 查询
 
+```java
+public int size() {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return count;
+        } finally {
+            lock.unlock();
+        }
+    }
+```
 
+以及iterator()方法都是直接加ReentrantLock独占锁，此时其它线程是不能执行入队或出队操作的。
