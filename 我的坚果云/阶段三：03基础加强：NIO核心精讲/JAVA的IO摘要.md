@@ -14,5 +14,45 @@
 - 最重要的5个类，分别是File，InputStream，OutPutStream，Reader，Writer；
 - 一个接口指的是：Serializable。
 
+#### File
 
+文件特征与管理。用于文件或者目录的描述信息，例如生成新目录，修改文件名，删除文件等操作。
+
+#### InputStream
+
+二进制格式操作。抽象类，基于字节的输入操作，是所有输入流的父类。定义了所有输入流都具有的共同特性。
+
+#### OutPutStream
+
+二进制格式操作。抽象类，基于字节的输出操作，是所有输出流的父类。定义了所有输出流都具有的共同特性。
+
+#### Reader
+
+文件格式操作。抽象类，基于字符的输入操作。
+
+#### Writer
+
+文件格式操作。抽象类，基于字符的输出操作。
+
+#### RandomAccessFile
+
+随机文件操作。一个独立的类，直接继承Object。它的功能更丰富，可以从文件的任何位置进行存取（输入输出）操作。
+
+### JAVA中IO流的体系结构
+
+java io体系主要包含如下几个层次：
+
+- 流式部分
+
+   IO的主体部分
+
+- 非流式部分
+
+​        主要包含一些辅助流式部分的类，如File类，RandomAccessFile类。
+
+- 其他类；
+  - 文件读取部分与安全相关的类，如：SerializablePermission类；
+  - 以及与本地操作系统相关的文件系统的类，如：FileSystem类和Win32FileSystem类和WinNTFileSystem类。
+
+<img src="JAVA的IO摘要.assets/JAVA IO体系.png" alt="JAVA IO体系" style="zoom:80%;" />
 
