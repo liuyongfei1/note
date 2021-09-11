@@ -12,4 +12,7 @@ NIO核心的API底层
 
 #### buffer
 
-java虚拟机要通过nio进行磁盘读写或者网络读写的时候，java虚拟机和磁盘之间交换数据的时候，必须通过buffer这个缓冲区或中转站。
+java虚拟机要通过nio进行磁盘读写或者网络读写的时候，java虚拟机和磁盘之间交换数据的时候，必须通过buffer这个缓冲区或中转站。支持各种不同的类型，包括ByteBuffer、ChartBuffer、DoubleBuffer、IntBuffer、FloatBuffer。
+
+4个核心概念：capacity，limit，position，mark。
+
