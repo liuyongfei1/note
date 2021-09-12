@@ -16,3 +16,16 @@ java虚拟机要通过nio进行磁盘读写或者网络读写的时候，java虚
 
 4个核心概念：capacity，limit，position，mark。
 
+demo可以看 blog-demo工程里nio-demo模块下面。
+
+#### FileChannel
+
+channel，数据通道。
+
+<img src="NIO.assets/NIO里的Channel.png" alt="NIO里的Channel" style="zoom:80%;" />
+
+channel.write(buffer) 是直接在末尾追加写，如果要实现随机写，需要借助：
+
+buffer.rewind(); =》buffer中的position复位
+
+channel.position();   => 调整 channel的position
