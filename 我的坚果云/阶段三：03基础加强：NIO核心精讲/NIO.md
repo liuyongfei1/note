@@ -29,3 +29,6 @@ channel.write(buffer) 是直接在末尾追加写，如果要实现随机写，�
 buffer.rewind(); =》buffer中的position复位
 
 channel.position();   => 调整 channel的position
+
+### 从磁盘文件中读取数据到Buffer缓冲区
+
