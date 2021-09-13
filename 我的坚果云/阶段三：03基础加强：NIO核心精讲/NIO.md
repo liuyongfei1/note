@@ -159,3 +159,16 @@ public FileChannel getChannel() {
 
 FileChannel有一个position的概念。指向了当前文件的某个位置，写数据的时候是从当前position的位置开始写的，写入文件之后，文件会不断变大，写了多少byte的数据，文件的position就会向前推移多少位。
 
+#### NIO核心原理之select发现通知机制
+
+channel注册给select，如果channel注册上后，就会一直在等：
+
+selector.select();
+
+卡在这里。
+
+然后如果当selector监听的channel有请求时，就会反向通知到selector。
+
+linux select机制，可以让一个线程监听多个socket有否有请求发送过来。不同的操作系统，select机制是不一样的。
+
+select()方法，他会感知哪些的channel底层的socket有请求进来了，可以执行IO操作来读取数据或者发送数据出去了，他就会把那些channel对应的key的集合给你返回回来了。如果没感知到哪个channel对应的socket可以执行读写操作的话，就会一直卡着，阻塞着。
