@@ -155,3 +155,7 @@ public FileChannel getChannel() {
 
 可以看到，是基于synchronized做的线程同步，他可以保证多个线程调用同一个的getChannel()方法的时候，是可以保证多线程并发的安全。
 
+#### FileChannel数据写入到磁盘
+
+FileChannel有一个position的概念。指向了当前文件的某个位置，写数据的时候是从当前position的位置开始写的，写入文件之后，文件会不断变大，写了多少byte的数据，文件的position就会向前推移多少位。
+
