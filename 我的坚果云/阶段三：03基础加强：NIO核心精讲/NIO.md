@@ -128,5 +128,30 @@ public static void main(String[] args) throws Exception {
 	}
 ```
 
+#### NIO核心原理剖析之FileChannel的初始化
 
+```java
+ // 构造一个传统的文件输出流
+FileOutputStream outputStream = new FileOutputStream("/Users/lyf/Downloads/nioTest/test1.txt");
+
+// 获取该文件输出流的FileChannel，以NIO的方式来写文件
+FileChannel channel = outputStream.getChannel();
+```
+
+sun.nio.ch.FileChannelImpl 这个类，是非常底层的一个类，是jdk内核里的东西，所以对这块源码就没必要深究了。
+
+FileOutputStream类：
+
+```java
+public FileChannel getChannel() {
+        synchronized (this) {
+            if (channel == null) {
+                channel = FileChannelImpl.open(fd, path, false, true, append, this);
+            }
+            return channel;
+        }
+    }
+```
+
+可以看到，是基于synchronized做的线程同步，他可以保证多个线程调用同一个的getChannel()方法的时候，是可以保证多线程并发的安全。
 
