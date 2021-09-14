@@ -379,4 +379,38 @@ Last-Modified: xxx
 
 此时你就需要按照应用层的协议，无论是HTTP协议，还是你自定义的协议，你就可以按照固定的格式来解析消息，进行处理。
 
-处理完了请求之后，就需要发送响应给人家客户端，此时你可以重新注册一下Channel，把你对这个channel感兴趣的操作变成：OP_WRITE，然后又会执行 selector.select()，卡住。
+处理完了请求之后，就需要发送响应给人家客户端，此时你可以重新注册一下Channel，把你对这个channel感兴趣的操作变成：OP_WRITE，什么时候就绪可以让我写，然后while true，又会执行 selector.select()，卡住。
+
+#### NIO核心原理之如何通过Channel发送数据
+
+如果当前socketChannel的状态是ok的，没有什么异常情况，那么就可以让你写数据发送出去，selector.select()就会从阻塞状态恢复过来，把对应的selectionKey告诉你，就会执行这段代码：
+
+```java
+ else if(key.isWritable()) {
+	            	ByteBuffer buffer = ByteBuffer.allocate(1024);
+	            	buffer.put("收到".getBytes());
+                // 将position改为0，limit调成写到position的那个地方
+	            	buffer.flip();
+	            	
+	            	channel = (SocketChannel) key.channel();
+	            	channel.write(buffer);       
+	            	channel.register(selector, SelectionKey.OP_READ);
+	            }
+```
+
+将数据放入buffer里。此时仍然应该按照设计好的应用层的协议，比如说HTTP协议：
+
+```
+200
+Gzip:xxx
+Accept:xxx
+// <html>
+// 一大段的html代码
+// </html>
+```
+
+将数据发送出去。
+
+我现在已经发送响应回去给客户端了，接下来再次重新注册这个channel。感兴趣的是 READ事件，这时就又卡在
+
+serverSocketChannel.accept();这里。如果又感知到客户端又给你发送数据了，这时就走READ的逻辑。
