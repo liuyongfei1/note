@@ -355,3 +355,28 @@ public class NIOServer {
 }
 ```
 
+#### NIO核心原理之如何通过Channel读取数据
+
+通过NIO和NIO里的channel和buffer这套机制来读取数据。
+
+通过channel把数据读出来，然后写到缓冲区内。
+
+接收到人家发送过来的数据或者请求之后，你应该如何来处理呢？
+
+这里讲一下协议的概念。
+
+TCP属于传输层协议，IP是网络层协议，以太网是链路层协议，在TCP之上，你接收到TCP给你传过来的数据只会，实际上应该有一个应用层的协议。如果是HTTP协议的话，人家给你发送的数据可能是下面这样的格式：
+
+```
+GET HTTP://1.1  home/do.jsp
+Accept: xxxx
+Last-Modified: xxx
+{
+   id: 1,
+   name: xxx
+}
+```
+
+此时你就需要按照应用层的协议，无论是HTTP协议，还是你自定义的协议，你就可以按照固定的格式来解析消息，进行处理。
+
+处理完了请求之后，就需要发送响应给人家客户端，此时你可以重新注册一下Channel，把你对这个channel感兴趣的操作变成：OP_WRITE，然后又会执行 selector.select()，卡住。
