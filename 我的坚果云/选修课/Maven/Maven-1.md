@@ -192,6 +192,16 @@ maven中默认内置了surefire插件来运行单元测试，与最新流行的j
 
 同时可以引入 cobertura 插件，可以看到测试覆盖率的报告。
 
+### Maven工程中各模块依赖版本统一
+
+在父工程中，使用<dependencyManagement> 和 <pluginManagement>来声明所有的依赖和插件。
+
+此时在子工程中，就可以对自己需要的依赖进行声明，而不用写版本号。只有在子工程中声明了，才会继承依赖，而且版本由父工程约束。
+
+**如果在父工程中，直接用dependencies和plugins来声明依赖和插件，子工程会强制全部继承；**
+
+**如果用dependencyManagemnent和pluginManagement来声明依赖和插件，默认情况下，子工程什么都不继承，只有当子工程声明了某个依赖或者插件的groupId+artifactId，但是不指定版本时，才会从父工程继承那个依赖。**
+
 ### Maven自动化部署
 
 基于maven做自动化部署。在maven中部署cargo插件，会将war包部署到比如tomcat的webapps目录。
