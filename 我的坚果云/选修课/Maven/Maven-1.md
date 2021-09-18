@@ -184,3 +184,12 @@ package 是指 package 生命周期中的 package phase。
 
 然后会执行 default 生命周期中，在  package phase之前的所有 phase和  package phase。
 
+### Maven的surefire插件运行单元测试及输出覆盖率报告
+
+maven中默认内置了surefire插件来运行单元测试，与最新流行的junit单元测试框架整合非常好。
+
+一般是在default生命周期的test阶段，会运行surefire插件的test  goal，然后执行 src/test/java 下面的所有单元测试。
+
+### Maven自动化部署
+
+基于maven做自动化部署。在maven中部署cargo插件，会将war包部署到比如tomcat的webapps目录。
