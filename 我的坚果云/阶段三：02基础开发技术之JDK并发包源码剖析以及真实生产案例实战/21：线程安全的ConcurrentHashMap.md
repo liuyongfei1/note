@@ -1,5 +1,7 @@
 ## ConcurrentHashMap
 
+ConcurrentHashMap底层就是基于数组，可能会扩容，中间都是有锁的，分段加锁。读的时候通过volatile读保证读到最新的数据。
+
 分段加锁，将一份数据拆分为多个segment，对每个segment设置一把小锁。比如put操作，仅仅是锁定一个segment而已，锁一部分的数据，其它的线程操作segment的数据，跟你是没有竞争的。
 
 可以提高多线程并发操作hashmap的效率。
@@ -54,3 +56,13 @@ static final <K,V> Node<K,V> tabAt(Node<K,V>[] tab, int i) {
 当链表的长度达到一个阈值，比如超过8之后，就会把链表转为红黑树。
 
 转化为红黑树后，下次如果还有hash冲突的问题，是直接把这个key-value对添加到红黑树中去。
+
+#### 案例场景
+
+微服务注册中心的客户端 register-client：
+
+client使用读写锁，大部分情况下都是在读，读锁是可以并发执行的。所以哪怕这个注册表使用的是hashMap也是无所谓的。
+
+server端会频繁的更新map里的某个key,value对，这跟client端是不一样的，最好是使用 ConcurrentHashMap，哪怕多个线程写，它可以保证多线程写的安全。
+
+为了降低读写锁的冲突，这里做了一套缓冲机制。把读写锁碰撞的概率降低了。
