@@ -41,3 +41,40 @@ kafka这个实战课程分为哪几个环节的步骤去讲：
 
 ![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝).png)](../../../2021年/儒猿/自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
 
+### Kafka的底层数据结构：日志文件与offset
+
+可以认为写到kafka里的数据，一条一条的数据都是写到日志文件里。每条数据都有offset，代表了这条数据在日志文件里是第几条。
+
+消费的时候也有一个offset的概念，意思是说某个消费者在这个日志文件里当前消费到了第几条消息。
+
+### Kafka是如何通过设计消息格式节约磁盘空间占用开销的
+
+crc32， magic，attribute，时间戳，key长度，key，value长度，value
+
+Kafka是直接通过NIO的ByteBuffer以二进制的方式来保存消息的。
+
+### 如何实现TB量级的数据再Kafka集群中分布式存储
+
+每个Kafka应用进程 叫 Broker，多个Broker 就组成一个集群。
+
+每个机器上都有partiton，是topic的一个数据分片，在底层就是一个日志文件，写数据的时候就可以把数据均匀的写到不同机器的不同partition上，这样的话，就可以通过多台机器来存储一个topic对应的大量数据。
+
+### 如何基于多副本冗余机制保证Kafka宕机时还具备高可用性
+
+多副本冗余机制，在partiiton里会选举出来一个leader，一个follower。
+
+### 如何保证写入Kafaka的数据不丢失呢？
+
+如果写入的数据还没来得及向副本里同步的时候，所在的机器就宕机了。
+
+然后副本被选举为leader；
+
+然后这时来一个消费者消费数据，就消费不到之前写入的数据了。
+
+怎么解决？引入ISR机制。in sync replica，就是跟leader partition保持同步的follower partition的数量。
+
+只有处于ISR列表中的follower的才可以在leader宕机之后被选举为行的leader，因为这个ISR列表里代表他的数据跟leader是同步的。
+
+Kafka会自动维护这个ISR列表，代表有哪个follower的数据跟leader是同步的。起码ISR列表里有一个，这时写数据才会写成功。如果ISR列表里连一个follower也没有，这时就不允许写。
+
+这样的话，只要你写成功了一条数据，就保证数据不会丢了。
