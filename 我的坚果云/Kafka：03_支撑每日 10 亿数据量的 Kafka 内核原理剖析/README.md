@@ -152,7 +152,7 @@ Kafka的通信主要发生在 生产端和broker之间，broker和消费端之�
 
 一旦controller所在broker宕机了，这个临时节点就会消失，集群里的其它broker会一直监听这个临时节点，发现临时节点消失了，就再次争抢去创建临时节点，保证有一台新的broker会成为controller角色。
 
-### 创建Topic时Kafka Controller是如何完成Leader选举的呢
+### 创建Topic时Kafka Controller是如何完成partition的Leader选举的呢
 
 创建topic的时候，就会在zk里创建这个topic对应的节点。这个时候就会在zk里边写入，我创建的topic有几个partition，每个partition有几个副本，每个副本的状态。此时状态都是：NonExistentReplica。
 
