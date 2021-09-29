@@ -78,3 +78,42 @@ Kafka是直接通过NIO的ByteBuffer以二进制的方式来保存消息的。
 Kafka会自动维护这个ISR列表，代表有哪个follower的数据跟leader是同步的。起码ISR列表里有一个，这时写数据才会写成功。如果ISR列表里连一个follower也没有，这时就不允许写。
 
 这样的话，只要你写成功了一条数据，就保证数据不会丢了。
+
+### Kafka集群处理请求的时候如何实现负载均衡的效果
+
+整个Kafka的架构原理：
+
+- Kafka的数据是分布式存储的，通过partition来把一个topic里的数据进行分布式存储；
+- 写数据的时候，不停的把请求发送给各个Kafka Broker里的leader partition；
+- 然后写完数据后就把leader partition数据同步给其它机器上的follower partition，做一个热备；
+- 同时还自动维护一个ISR列表，会记录哪些follower partition与leader partition保持着同步。
+
+#### 各个Kafka Broker如何实现负载均衡
+
+Kafka会自动的把各个leader partition均匀的分布在各个Broker所在的机器上。
+
+请求leader partition的时候，是均匀的发送请求给各个Broker。
+
+### 基于Zookeeper实现Kafka无状态可伸缩的架构设计思路
+
+将Kafka Broker相关的元数据信息，比如包含了哪些partition，哪些topic等，存入到Zookeeper集群。
+
+### Partition的几个核心offset
+
+#### LEO
+
+每次leader接收到一条消息，都会更新自己的LEO，也就是log end offset。
+
+接着各个follower会从leader请求同步数据。
+
+offset = 0  ~~~ offset = 4 =》 LEO = 5，代表了最后一条数据后面的offset，也就是下一次将要写入数据的offset。
+
+### 磁盘上的日志文件是按照什么策略定期清理腾出空间的？
+
+大家可以想，不可能说每天涌入的数据都一直留在磁盘上，本质Kafka是一个流式数据的中间件，不需要跟离线存储系统一样保存全量的大数据，所以Kafka是会定期清理掉数据的，这里有几个清理策略。
+
+Kafka默认保留最近7天的数据，每天都会把7天以前的数据给清理掉，包括.log，.index和.timeindex 这几个文件。log.retention.hours参数，可以设置数据要保留几天。
+
+只要你的数据保留在Kafka里，就可以通过offset的指定，随时可以从kafka 搂出来几天之前的数据，进行数据回放。
+
+比如下游的消费者消费了数据之后，数据丢失了，你需要从Kafka里搂出来3天前的数据，重新来回放处理一遍。
