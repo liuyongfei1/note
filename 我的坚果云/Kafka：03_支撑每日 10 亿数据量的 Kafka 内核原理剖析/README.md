@@ -192,3 +192,11 @@ Controller会感知到topic下面新增了一个子节点，就会把这些元�
 2. 接着Controller继续将这个Topic的所有partition副本状态修改为：ReplicaDeleteStarted；
 3. 然后Controller还要给Broker发送请求，将各个partition副本的数据给删掉，就是对应磁盘上的那些文件，删除成功后，副本状态变为：ReplicaDeletionSuccessful，接着再变为 NonExistenReplica；
 4. 最后设置这个Topic的各个分区状态为：Offline。
+
+### Kafka Controller是如何基于ZK感知Broker的上线以及崩溃的？
+
+1. Broker b在启动的时候会在zk里边生成一个临时节点，当Broker b宕机后，zk里的这个临时节点会消失；
+
+2. Controller知道这个宕机的Broker上的leader partition有哪些，Controller会感知到这个临时节点消失了就会找到这个leader partition对应的follower partition所在的机器，然后从这些follower里边重新进行选举一个新的leader，然后更新元数据，并且通知所有的Broker，leader发生变更了。
+
+如果集群中添加更多的Broker，Controller也能感知到。后边如果你给Topic设置更多的分区时，kafka会尽量分配给新的Broker。
