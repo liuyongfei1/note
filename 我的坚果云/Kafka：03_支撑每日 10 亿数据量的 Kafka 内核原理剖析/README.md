@@ -151,3 +151,44 @@ Kafka的通信主要发生在 生产端和broker之间，broker和消费端之�
 但是zookeeper会保证只有一个Broker会创建临节点成功，这个创建成功的broker就会选举为Controller。
 
 一旦controller所在broker宕机了，这个临时节点就会消失，集群里的其它broker会一直监听这个临时节点，发现临时节点消失了，就再次争抢去创建临时节点，保证有一台新的broker会成为controller角色。
+
+### 创建Topic时Kafka Controller是如何完成Leader选举的呢
+
+创建topic的时候，就会在zk里创建这个topic对应的节点。这个时候就会在zk里边写入，我创建的topic有几个partition，每个partition有几个副本，每个副本的状态。此时状态都是：NonExistentReplica。
+
+Broker会监听zk里的topic变化的（topic的partition变化或者topic的数量变化），接着就会从zk中加载所有的kafka元数据信息到内存里，把这些partition副本的状态更改为：**NewReplica**。
+
+比如说你创建一个topic，order_topic，设置3个partition，有2个副本，会写入到zk里去：
+
+创建一个节点：
+
+/topics/order_topic
+
+partiton = 3， replica_factor = 2
+
+[partition0_1,partition0_2]
+
+[partition1_1,partition1_2]
+
+[partition2_1,partition2_2]
+
+Controller会感知到topic下面新增了一个子节点，就会把这些元数据加载到内存里边。
+
+然后从每个partition的副本列表里取出来第一个做为leader，其他的就是follower，把这些给放到partition对应的ISR列表里去。
+
+每个partition的副本在哪台机器上呢？kafka会做一个均匀的分配，把partition分散在各个机器上面，通过算法来保证，尽可能的把leader partition均匀分配在各个机器上，读写请求流都是打在leader partition上。
+
+同时还会设置整个partition的状态：**OnlinePartition**。
+
+接着Controller会把这个partition和副本所有的信息（包括谁是leader，谁是follower，ISR列表）都发送给所有broker，让他们知晓。
+
+在kafka集群里，Controller负责集群的整体控制，但是每个broker都有一份元数据。
+
+### 删除Topic时又是如何通过Kafka Controller控制数据清理？
+
+如果要删除某个topic，则是如下的过程：
+
+1. Controller会发送请求给这个Topic所有的partition所在的Broker机器，通知设置这个Topic的所有partition副本状态为：OfflineReplica，也就是让副本全部下线；
+2. 接着Controller继续将这个Topic的所有partition副本状态修改为：ReplicaDeleteStarted；
+3. 然后Controller还要给Broker发送请求，将各个partition副本的数据给删掉，就是对应磁盘上的那些文件，删除成功后，副本状态变为：ReplicaDeletionSuccessful，接着再变为 NonExistenReplica；
+4. 最后设置这个Topic的各个分区状态为：Offline。
