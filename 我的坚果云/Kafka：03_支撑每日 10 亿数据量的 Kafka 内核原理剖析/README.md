@@ -117,3 +117,37 @@ Kafka默认保留最近7天的数据，每天都会把7天以前的数据给清�
 只要你的数据保留在Kafka里，就可以通过offset的指定，随时可以从kafka 搂出来几天之前的数据，进行数据回放。
 
 比如下游的消费者消费了数据之后，数据丢失了，你需要从Kafka里搂出来3天前的数据，重新来回放处理一遍。
+
+### Kafka是如何自定义TCP之上的通信协议以及使用长连接通信的？
+
+Kafka的通信主要发生在 生产端和broker之间，broker和消费端之间，broker和broker之间，这些通信都是基于TCP协议进行连接和传输数据。
+
+然后基于TCP之上的通信协议，是Kafka自定义的，是属于网络层里面的应用层的。
+
+**所谓自定义的协议，说白了就是定义好互相之间发送请求和响应的数据格式，大家都按照这个格式来发送和响应数据。**
+
+### Broker是如何基于Reactor模式进行多路复用请求处理的？
+
+每个broker上都有一个 acceptor 线程和 很多个 processor 线程。可以用 num.network.threads 参数设置 processor 线程的数量，默认是3，client 跟一个broker 之间只会创建一个 socket 长连接，会复用。
+
+<img src="README.assets/Kafka Broker基于Reactor模式进行多路复用请求处理.png" alt="Kafka Broker基于Reactor模式进行多路复用请求处理" style="zoom:80%;" />
+
+### 如何对Kafka集群进行整体控制？Controller是个什么东西？
+
+不知道大家有没有思考过一个问题，就是Kafka集群中某个broker宕机之后，是谁负责感知到他的宕机？ 
+
+加一个Broker时是谁负责把集群里的数据进行负载均衡的迁移？创建topic时leader，follower怎么分配这些?
+
+需要有一个总控组件来对集群进行整体的控制，这就是Controller。
+
+所有的Broker会进行选举，然后某一个Broker会做为Controller的角色。
+
+### 如何基于Zookeeper实现Controller的选举以及故障转移
+
+在Kakfa集群启动的时候，会自动选举一台broker出来承担controller的责任，然后负责管理集群。
+
+这个过程就是说每个broker都会尝试在zookeeper上创建一个/controller临时节点。
+
+但是zookeeper会保证只有一个Broker会创建临节点成功，这个创建成功的broker就会选举为Controller。
+
+一旦controller所在broker宕机了，这个临时节点就会消失，集群里的其它broker会一直监听这个临时节点，发现临时节点消失了，就再次争抢去创建临时节点，保证有一台新的broker会成为controller角色。
