@@ -256,3 +256,27 @@ Controller会把当前集群的元数据信息，比如当前有Broker节点的�
 ### Kafka集群扩容之后如何迁移parititon保证集群负载均衡
 
 这时如果要实现资源负载均衡，需要手动进行迁移，将原来Broker上的partition迁移一些到这个新的Broker上面。
+
+vi topics-to-move.json
+
+ 
+
+{“topics”: [{“topic”: “test01”}, {“topic”: “test02”}], “version”: 1} // 把你所有的topic都写在这里
+
+
+
+bin/kafka-reassgin-partitions.sh --zookeeper hadoop03:2181,hadoop04:2181,hadoop05:2181 --topics-to-move-json-file topics-to-move.json --broker-list "5,6" --generate // 把你所有的包括新加入的broker机器都写在这里，就会说是把所有的partition均匀的分散在各个broker上，包括新进来的broker
+
+ 5,6 即为新增的broker的broker的id。
+
+执行这个命令后， --generate 会生成一个迁移方案，可以保存到一个json文件里去，类似这样：
+
+```json
+bin/kafka-reassign-partitions.sh --zookeeper hadoop01:2181,hadoop02:2181,hadoop03:2181 --reassignment-json-file expand-cluster-reassignment.json --execute
+
+bin/kafka-reassign-partitions.sh --zookeeper hadoop01:2181,hadoop02:2181,hadoop03:2181 --reassignment-json-file expand-cluster-reassignment.json --verify
+
+```
+
+然后再手动执行这个json文件里的这些指令。这个过程是非常耗费资源的，因为涉及到partition数据的迁移，很耗资源，涉及大量的网络带宽的传输，所以最好在网络低峰时做。
+
