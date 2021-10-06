@@ -309,3 +309,4 @@ producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会
 
 然后producer内部有一个sender后台线程，会从缓冲区里提取消息，将这些数据封装成一个一个的batch，然后每个batch发送给分区的leader所在的broker机器。
 
+<img src="README.assets/Kafka Producer发送消息的内部实现原理.png" alt="Kafka Producer发送消息的内部实现原理" style="zoom:80%;" />
