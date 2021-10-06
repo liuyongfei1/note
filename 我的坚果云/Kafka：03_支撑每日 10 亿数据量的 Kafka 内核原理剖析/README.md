@@ -280,3 +280,21 @@ bin/kafka-reassign-partitions.sh --zookeeper hadoop01:2181,hadoop02:2181,hadoop0
 
 然后再手动执行这个json文件里的这些指令。这个过程是非常耗费资源的，因为涉及到partition数据的迁移，很耗资源，涉及大量的网络带宽的传输，所以最好在网络低峰时做。
 
+### Kafka Producer怎么把消息发送给Broker集群的？
+
+producer需要指定把消息发送给哪个topic去。
+
+producer.send(msg); // 用类似这样的方式去发送消息，就会把消息给你均匀的分不到各个分区上去；
+
+producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会根据这个key的hash值去分发到某个分区上去，可以保证相同的key会路由分发到同一个分区上去。
+
+生产者客户端起码要知道两个元数据：
+
+- 每个topic有几个分区；
+- 每个分区的leader是在哪台broker上。
+
+然后跟那个机器上的Broker通过sokcet建立连接来进行通信，发送Kafka自定义的协议格式的请求过去，把消息带过去就行了。
+
+这两个元数据从哪里来的呢？
+
+**producer会自己从 broker 上拉取kafka集群的元数据，缓存在自己的client本地客户端上。**
