@@ -298,3 +298,14 @@ producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会
 这两个元数据从哪里来的呢？
 
 **producer会自己从 broker 上拉取kafka集群的元数据，缓存在自己的client本地客户端上。**
+
+### Kafka Producer发送消息的内部实现原理
+
+每次发送消息，都会必须把数据封装成一个ProducerRecord对象，里面包含了要发送的topic，发送给哪个分区，分区key，消息内容，timestamp时间戳，然后将这个对象交给序列化器，变成自定义协议格式的数据。
+
+接着把数据交给partitioner分区器，对这个数据选择合适的分区，默认就轮询所有分区，或者根据key来hash路由到某个分区，这个topic对应的分区消息，都会在客户端缓存的（当然提前回从broker中获取）。
+
+接着会把这个数据发送到producer内部的一块缓冲区里。
+
+然后producer内部有一个sender后台线程，会从缓冲区里提取消息，将这些数据封装成一个一个的batch，然后每个batch发送给分区的leader所在的broker机器。
+
