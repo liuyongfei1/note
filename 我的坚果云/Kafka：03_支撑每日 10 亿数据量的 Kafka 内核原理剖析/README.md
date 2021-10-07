@@ -310,3 +310,17 @@ producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会
 然后producer内部有一个sender后台线程，会从缓冲区里提取消息，将这些数据封装成一个一个的batch，然后每个batch发送给分区的leader所在的broker机器。
 
 <img src="README.assets/Kafka Producer发送消息的内部实现原理.png" alt="Kafka Producer发送消息的内部实现原理" style="zoom:80%;" />
+
+### Kafka基于Consumer Group的消费者组
+
+每个consumer都要属于一个consumer.group，就是一个消费组。
+
+topic的一个分区只会分配给一个消费组内的一个consumer来消费消息。
+
+每个consumer可能分配多个分区，也有可能某个consumer没有分配到任何分区。
+
+分区内的消息都是由offset的，因此同一分区内的数据是可以保证顺序性的。
+
+如果consumer group中的某个consumer挂了，则此时会自动把分配给他的分区交给其他的消费者；
+
+如果他又重启了，那么又会把一些分区重新交给他，这个就是所谓的消费者 reblance 的过程。
