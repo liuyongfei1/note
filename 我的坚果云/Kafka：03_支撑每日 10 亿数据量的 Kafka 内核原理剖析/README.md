@@ -350,3 +350,36 @@ coordinator 会尽可能均匀的分配分区给各个 consumer 来消费。
 ### Coordinator和Consumer leader如何协作制定分区方案
 
 <img src="README.assets/Coordinator和Consumer Leader如何协作制定分区方案-3657349.png" alt="Coordinator和Consumer Leader如何协作制定分区方案" style="zoom:80%;" />
+
+### rebalance的三种策略分别有哪些优劣势
+
+三种rebalance策略：range、round-robin、sticky。
+
+#### range
+
+consumer1: partition0~2；
+
+consumer2: partition3~5；
+
+consumer3: partition6~8；
+
+#### round-robin
+
+consumer1: partition0，partition3，partition6；
+
+consumer2: partition1，partition4，partition7；
+
+consumer3: partition2，partition5，partition8；
+
+#### sticky
+
+最新的一个sticky策略，会尽可能的保障在rebalance的时候，让原本属于这个consumer的分区还属于他们，然后把多余的分区再均匀的分配过去，这样尽可能维持原来的分区分配的策略。
+
+假如consumer3挂了，会这样分配：
+
+consumer1: partition0~2 + partition6~7
+
+consumer2: partition3~5 + partition8；
+
+默认是 range 策略。基本上用的也都是range策略。
+
