@@ -324,3 +324,25 @@ topic的一个分区只会分配给一个消费组内的一个consumer来消费�
 如果consumer group中的某个consumer挂了，则此时会自动把分配给他的分区交给其他的消费者；
 
 如果他又重启了，那么又会把一些分区重新交给他，这个就是所谓的消费者 rebalance 的过程。
+
+### Consumer Group Coordinator是什么以及主要负责什么
+
+每个consumer group 都会选择一个broker 作为自己的coordinator，它是负责监控这个消费组里的各个消费者的心跳、以及判断是否宕机，然后开启rebalance，那么这个如何选择呢？
+
+每个consumer都有自己的后台线程，不断发送心跳
+
+coordinator 会尽可能均匀的分配分区给各个 consumer 来消费。
+
+### 为消费者选择 coordinator的算法是如何实现的
+
+每个kafka consumer 不停的消费数据后，会维护一个自己当前消费每个分区数据消费到哪个offset了，然后会定期提交这个offset。新版本比如0.10，0.11以后，提交这个offset直接往kafka内部的一个topic: __consumer_offsets 去写。
+
+那么写的时候，是怎么决定往 __consumer_offsets 的哪个分区（默认有50个分区）去提交的呢？
+
+每个kafka consumer 都会拿自己的 group id进行hash，接着对__consumer_offsets的分区数据进行取模，就可以找到你的这个 consumer group 的offset 要提交到__consumer_offsets的哪个分区了。
+
+
+
+你只要能找到你这个consumer group 是往 __consumer_offsets 的哪个分区去提交，你就可以找到这个分区对应的leader分区所在broker，这个broker就是这个 consumer group对应的 coordinator。
+
+每个consumer内部维护着一个socket，会跟对应的coordinator（kafka broker） 建立一个连接，通信。
