@@ -333,6 +333,8 @@ topic的一个分区只会分配给一个消费组内的一个consumer来消费�
 
 coordinator 会尽可能均匀的分配分区给各个 consumer 来消费。
 
+coordinator 能感知到 group 里的 consumer 发生了变化，会进行 rebalance。
+
 ### 为消费者选择 coordinator的算法是如何实现的
 
 每个kafka consumer 不停的消费数据后，会维护一个自己当前消费每个分区数据消费到哪个offset了，然后会定期提交这个offset。新版本比如0.10，0.11以后，提交这个offset直接往kafka内部的一个topic: __consumer_offsets 去写。
@@ -383,3 +385,24 @@ consumer2: partition3~5 + partition8；
 
 默认是 range 策略。基本上用的也都是range策略。
 
+### 自动提交offset语义以及导致消息丢失和重复消费的问题
+
+默认offset 是自动提交的。
+
+auto.commit.inetrval.ms：5000，默认是5秒提交一次。
+
+如果提交了消费到的offset之后，kafka broker就可以感知到了。比如你消费到了offset = 56987，下次你的consumer再次重启的时候，就会自动从 56987 这个位置往后去消费。
+
+他的语义是一旦消息给你poll到了之后，这些消息就认为处理完了，后续就可以提交offset了。所以这里有两种问题：
+
+#### 第一：消息丢失
+
+如果你刚刚poll到消息，然后还没来得及处理消息，这时offset提交了，如果此时consumer宕机了，再次重启，则数据会丢失。因为上一次消费的那条数据其实你还没来得及处理，但kafka认为你已经处理了。
+
+例如，本次poll到了一批数据，offset=65510~65532，刚好到了时间提交了offset，offset=65532 这个地方已经提交给kafka broker了，接着你准备对这批数据进行消费，结果不巧的是，刚要消费consumer宕机了。
+
+其实你消费到的数据是没有处理的，但是消费offset已经提交给kafka了，consumer下次重启之后，会从offset=65533 这个位置开始消费，因此之前的那批数据就丢失了。
+
+#### 第二：重复消费
+
+如果你poll到了一批数据，offset=65510~65532，然后消费数据，并且都处理完了，但是offset还没来得及提交，consumer却宕机了，再次重启consumer，就会重新消费offset=65510~65532这一批消息，那么就会存在消息重复消费的问题。
