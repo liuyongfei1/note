@@ -346,3 +346,7 @@ coordinator 会尽可能均匀的分配分区给各个 consumer 来消费。
 你只要能找到你这个consumer group 是往 __consumer_offsets 的哪个分区去提交，你就可以找到这个分区对应的leader分区所在broker，这个broker就是这个 consumer group对应的 coordinator。
 
 每个consumer内部维护着一个socket，会跟对应的coordinator（kafka broker） 建立一个连接，通信。
+
+### Coordinator和Consumer leader如何协作制定分区方案
+
+<img src="README.assets/Coordinator和Consumer Leader如何协作制定分区方案-3657349.png" alt="Coordinator和Consumer Leader如何协作制定分区方案" style="zoom:80%;" />
