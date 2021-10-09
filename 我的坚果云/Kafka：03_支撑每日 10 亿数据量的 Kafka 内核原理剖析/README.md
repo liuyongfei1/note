@@ -440,3 +440,22 @@ max.in.flight.requests.per.connetction:5
 #### 延时拉取任务
 
 这种延时拉取任务，就是说follower往leader拉取消息的时候，如果发现是空的，那么此时会创建一个延时拉取任务，然后延时时间到了之后，就会再次读取一次消息，如果过程中leader写入了消息，那么也会自动执行这个拉取任务。
+
+### Kafka全链路数据丢失风险分析
+
+#### 生产端丢数据的场景
+
+1. producer生产的数据，还没有写入缓冲区，结果producer就挂了；
+
+2. acks = 1（那么只要leader写入成功了，就可以认为是成功）时，但是如果数据刚刚写入leader虽然返回成功，但follower还没有同步数据呢，此时leader宕机了；
+
+3. acks =  -1，leader和follower都写成功了才算是成功，此时任何一个副本数据丢失，都不会导致数据的丢失。但问题是如果min.insyc.replicas = 1，此时如果follower先宕机了，导致ISR列表里就一个leader了。
+
+   但 acks =  -1，ISR里的副本都写入成功了，leader写入成功了就算成功了，结果此后leader也挂了，此时由于没有副本，数据还是会丢失的；
+
+#### 消费端丢数据的场景
+
+1. 消费到数据，还没来得及处理，刚好offset自动提交了，此时kafka就认为你已经成功处理了这批数据，但是此时 consumer宕机了。
+
+
+
