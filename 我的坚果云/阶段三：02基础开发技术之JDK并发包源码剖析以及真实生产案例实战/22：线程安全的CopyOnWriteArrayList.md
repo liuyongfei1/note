@@ -29,7 +29,7 @@ CopyOnWriteArrayList，写时复制机制的ArrayList。可以保证线程并发
 
 4. 增删改查操作的时候，都必须先获取一把ReentrantLock独占锁，保证同一时间只可以有一个线程操作底层的数组。
 
-   
+  
 
 ### 总结
 
