@@ -70,7 +70,7 @@ maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻
 
 ### 总结： RecordAccumulator 这个组件的内存缓存机制
 
-主要是  RecordAccumulator 这个组件的内存缓存机制：
+主要是  RecordAccumulator 这个组件的内存缓存机制，一个分区的消息才能缓冲到一个Deque对应的batch里去：
 
 1. 不断往里面写消息，像每个分区写消息时多线程并发；
 2. 从BufferPool里拿ByteBuffer出来复用，然后拿ByteBuffer去构建 batch，后面其它线程都往batch里去写；
@@ -79,3 +79,12 @@ maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻
 5. 如果batch占的ByteBuffer的内存空间超过了可用的内存空间，其它线程就会卡在这里，阻塞；
 6. 如果有空间腾出来，就会唤醒阻塞的线程，再次申请一个新的ByteBuffer来构建一个batch，然后线程可以继续往里写消息了，否则，就会抛出超时的错误。
 
+基于缓冲池，复用内存，避免不断的申请内存、垃圾回收。
+
+
+
+#### 负责把消息拿出来然后发送给Broker的是谁呢？
+
+就是Kafka生产端的一个IO线程，里面封装了 sender 逻辑 =》 NetworkClient 发送网络请求。
+
+每个Broker上有多个partition，把同一个broker上的partition聚合分组打包为batch，然后把这些partition的多个batch放在一个Request里一次性发送给broker。
