@@ -83,8 +83,21 @@ maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻
 
 
 
-#### 负责把消息拿出来然后发送给Broker的是谁呢？
+#### Kafka生产端唯一的一个IO线程到底在干什么？
 
 就是Kafka生产端的一个IO线程，里面封装了 sender 逻辑 =》 NetworkClient 发送网络请求。
 
-每个Broker上有多个partition，把同一个broker上的partition聚合分组打包为batch，然后把这些partition的多个batch放在一个Request里一次性发送给broker。
+每个Broker上有多个partition，把同一个broker上的leader partition聚合分组打包为batch，然后把这些leader partition所对应的batch，放在一个ClientRequest里一次性发送给broker。
+
+然后通过NetWorkClient走底层的网络通信，把每个broker的clientRequest给发送过去。
+
+NetWorkClient的poll方法是负责进行网络IO通信操作的一个核心方法，负责发送数据出去和读取响应。
+
+
+
+元数据加载的请求是如何通过网络通信发送出去的？
+
+元数据加载的响应是如何来处理的？
+
+
+
