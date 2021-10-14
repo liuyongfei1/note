@@ -136,3 +136,23 @@ Selector的组件进行连接，之前学习NIO的课程就知道：
 2. 就会把SocketChannel注册到Selector上面；
 3. Selector会监听这个SocketChannel连接的事件；
 4. 如果Broker返回的响应说可以建立连接，Selector就会告诉你，你就可以通过一个API的调用，完成底层的网络连接，TCP三层握手。
+
+Selector类：
+
+```java
+A nioSelector interface for doing non-blocking multi-connection network I/O.
+```
+
+针对多个Broker的网络连接，执行非阻塞的IO操作。=》 可以复习前面的NIO课程。
+
+#### Selector类的connect()方法
+
+本地用两个 KafkaProducer 服务试一下 多个jvm进程时的 并发问题。
+
+#### 针对每个目标Broker构建一个很多Batch组成的Request
+
+发送出去的请求，需要按照Kafka的二进制协议来定制数据的格式。
+
+需要包含对应的请求头，api key，api version，acks，request timeout，接着才是请求体，里面包含了对应的多个batch数据，最后，再把数据给转化为二进制的字节数组。
+
+ClientRequest里面就是封装了按照二进制协议格式的数据，发送到broker上去，有很多个topic，每个topic有很多个partition，每个partition对应一个batch的数据，
