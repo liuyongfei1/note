@@ -99,5 +99,40 @@ NetWorkClient的poll方法是负责进行网络IO通信操作的一个核心方�
 
 元数据加载的响应是如何来处理的？
 
+#### 通过哪个核心组件与Broker建立连接？
 
+NetworkClient类的 initiateConnect()方法：
 
+```java
+/**
+ * Initiate a connection to the given node
+ */
+private void initiateConnect(Node node, long now) {
+    String nodeConnectionId = node.idString();
+    try {
+        log.debug("Initiating connection to node {} at {}:{}.", node.id(), node.host(), node.port());
+        this.connectionStates.connecting(nodeConnectionId, now);
+        // 底层建立socket连接
+        // 发送缓冲区大小(128KB)，接收缓冲区大小(32KB)。
+        selector.connect(nodeConnectionId,
+                         new InetSocketAddress(node.host(), node.port()),
+                         this.socketSendBuffer,
+                         this.socketReceiveBuffer);
+    } catch (IOException e) {
+        /* attempt failed, we'll try again after the backoff */
+        connectionStates.disconnected(nodeConnectionId, now);
+        /* maybe the problem is our metadata, update it */
+        metadataUpdater.requestUpdate();
+        log.debug("Error connecting to node {} at {}:{}:", node.id(), node.host(), node.port(), e);
+    }
+}
+```
+
+在工业级的网络通信开发里面，socketSendBuffer和socketReceiveBuffer 这连个核心参数都是必须设置的。
+
+Selector的组件进行连接，之前学习NIO的课程就知道：
+
+1. NIO建立连接其实就是在底层初始化一个SocketChannel发起一个连接的请求；
+2. 就会把SocketChannel注册到Selector上面；
+3. Selector会监听这个SocketChannel连接的事件；
+4. 如果Broker返回的响应说可以建立连接，Selector就会告诉你，你就可以通过一个API的调用，完成底层的网络连接，TCP三层握手。
