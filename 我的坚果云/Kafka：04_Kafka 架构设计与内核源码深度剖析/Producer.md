@@ -156,3 +156,7 @@ A nioSelector interface for doing non-blocking multi-connection network I/O.
 需要包含对应的请求头，api key，api version，acks，request timeout，接着才是请求体，里面包含了对应的多个batch数据，最后，再把数据给转化为二进制的字节数组。
 
 ClientRequest里面就是封装了按照二进制协议格式的数据，发送到broker上去，有很多个topic，每个topic有很多个partition，每个partition对应一个batch的数据，
+
+要发送请求的时候，会把这个请求暂存到KafkaChannel里去，同时让Selector监听他的OPT_WRITE事件，增加一种OPT_WRITE事件，同时保留了OPT_READ事件，此时Selector会同时监听这个连接的OPT_WRITE和OPT_READ事件。
+
+发送完了请求之后，就会把OPT_WRITE事件取消监听，只保留关注OPT_READ事件。
