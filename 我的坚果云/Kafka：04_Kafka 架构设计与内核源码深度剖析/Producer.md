@@ -160,3 +160,11 @@ ClientRequest里面就是封装了按照二进制协议格式的数据，发送�
 要发送请求的时候，会把这个请求暂存到KafkaChannel里去，同时让Selector监听他的OPT_WRITE事件，增加一种OPT_WRITE事件，同时保留了OPT_READ事件，此时Selector会同时监听这个连接的OPT_WRITE和OPT_READ事件。
 
 发送完了请求之后，就会把OPT_WRITE事件取消监听，只保留关注OPT_READ事件。
+
+#### 看看Kafka生产端的NIO编程是如何进行拆包类问题的处理的？
+
+如果说一个请求对应的ByteBuffer中的二进制字节数据一次write没有全部发送完毕，此时remainging > 0，就不会取消对OT_WRITE事件的监听。
+
+下次请求调用poll方法，会发现对这个broker可以再次执行WRITABLE事件，然后再次调用SocketChannel的write方法，把ByteBuffer里剩余的数据继续往Broker去写。	
+
+上述这个过程会重复多次，直到把这个请求对应的数据发送完毕。
