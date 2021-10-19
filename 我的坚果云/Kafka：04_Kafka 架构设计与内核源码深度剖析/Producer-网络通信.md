@@ -199,6 +199,10 @@ ClientRequest里面就是封装了按照二进制协议格式的数据，发送�
 
 **在读取消息的时候，4个字节的size都没读完，比如就只能读到19。**
 
+position = 0，limit = 4
+
+现在读取一个字节，position=1；读取二个字节，position = 2，此时remaining 是2，还剩下2个字节是可以读的。	
+
 如果说一个请求对应的ByteBuffer中的二进制字节数据一次write没有全部发送完毕，此时remainging > 0，就不会取消对OT_WRITE事件的监听。
 
 下次请求调用poll方法，会再次运行到这里来：
@@ -289,8 +293,6 @@ NetworkReceive为null了，下次就可以读取一条新的数据了。
 
 
 
-
-
 ##### Selector类的addToCompletedReceives()方法
 
 每次循环只拿出一个客户端的一个请求放到completedReceives里去。
@@ -300,3 +302,17 @@ KSelector对于某个客户端，StagedReceives里可能有多个请求，但是
 下一次循环，只有关注了OP_WRITE事件，才会把StagedReceives里的请求放到completedReceives里去。
 
 所以，同一时间，一个客户端只可能有一个Request在这个RequestQueue里，必须得等到这个请求处理完毕后，重新关注OP_WRITE，才能处理这个客户端的下一个请求。
+
+### 用于将消息写入磁盘文件的ReplicaManager是什么
+
+每个leader写入了一条消息，leader partition的LEO会推进一位；
+
+但是必须等到所有的follower都同步了这条消息，partition的HW才能整体推进一位。
+
+消费者只能读取到HW高水位以下的消息。
+
+isr列表，保存了leader和 跟上leader数据同步，没有落后太多数据的follower。
+
+### 主要的几个方面
+
+目录组织机制、磁盘文件组织机制、数据文件 +索引文件、数据格式、定时刷新OS Cache、基于NIO/BIO写磁盘的细节。
