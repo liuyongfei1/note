@@ -161,6 +161,10 @@ ClientRequest里面就是封装了按照二进制协议格式的数据，发送�
 
 发送完了请求之后，就会把OPT_WRITE事件取消监听，只保留关注OPT_READ事件。
 
+发现对这个broker可以再次执行OPT_WRITE事件，然后再次调用SocketChannel的write方法，把ByteBuffer里剩余的数据继续往Broker去写。	
+
+上述这个过程会重复多次，直到把这个请求对应的数据发送完毕。
+
 #### 看看Kafka生产端的NIO编程是如何进行粘包类问题的处理的？
 
 粘包也就是说收到了多余的数据。
@@ -183,12 +187,116 @@ ClientRequest里面就是封装了按照二进制协议格式的数据，发送�
 
 由此，就完成了一整条数据的正式读取。
 
-
-
 #### 看看Kafka生产端的NIO编程是如何进行拆包类问题的处理的？
+
+拆包，也就是说收到的数据不是一条完整的数据。那么该如何组成一条完整的数据呢？
+
+假如有这样的多条消息：
+
+199 消息 256消息 369消息
+
+##### 情况一
+
+**在读取消息的时候，4个字节的size都没读完，比如就只能读到19。**
 
 如果说一个请求对应的ByteBuffer中的二进制字节数据一次write没有全部发送完毕，此时remainging > 0，就不会取消对OT_WRITE事件的监听。
 
-下次请求调用poll方法，会发现对这个broker可以再次执行WRITABLE事件，然后再次调用SocketChannel的write方法，把ByteBuffer里剩余的数据继续往Broker去写。	
+下次请求调用poll方法，会再次运行到这里来：
 
-上述这个过程会重复多次，直到把这个请求对应的数据发送完毕。
+Selector类的pollSelectionKeys()方法：
+
+```java
+while(networkReceive = channel.read() != null)
+    addToStagedReceives(channel, networkReceive);
+```
+
+
+
+KafkaChannel类：
+
+```java
+public NetworkReceive read() throws IOException {
+    NetworkReceive result = null;
+
+    if (receive == null) {
+        receive = new NetworkReceive(maxReceiveSize, id);
+    }
+
+    receive(receive);
+    if (receive.complete()) {
+        receive.payload().rewind();
+        result = receive;
+        receive = null;
+    }
+    return result;
+}
+```
+
+由于上一次没有读完消息，因此**NetworkReceive**还是停留在那里，可以继续读取：
+
+```java
+private long receive(NetworkReceive receive) throws IOException {
+    return receive.readFrom(transportLayer);
+}
+```
+
+因为剩余还有2个字节，所以这次最多就只能读取2个字节到里面去，这样，4个字节的size就凑满了，此时就说明size数字是可以读取出来了。解决了size的拆包问题。
+
+##### 情况二
+
+**比如199个字节的消息只读取到了 172个字节，这种拆包问题怎么处理？**
+
+下一次继续循环，执行到代码NetworkReceive类的readFromReadableChannel()方法：
+
+```java
+if (buffer != null) {
+    int bytesRead = channel.read(buffer);
+    if (bytesRead < 0)
+        throw new EOFException();
+    read += bytesRead;
+}
+```
+
+buffer不为null，剩余还有27个字节，则就读取27个字节。就把剩余的数据给读出来了。
+
+
+
+只要size或buffer没读完，**NetworkReceive**就一直放在Channel里，并且保持对OP_READ事件的监听。
+
+```java
+public NetworkReceive read() throws IOException {
+    NetworkReceive result = null;
+
+    if (receive == null) {
+        receive = new NetworkReceive(maxReceiveSize, id);
+    }
+
+    receive(receive);
+    // 通过判断size或buffer都没有remaining了来判断是否读完了
+    if (receive.complete()) {
+        receive.payload().rewind();
+        result = receive;
+        // 然后就将receive置为null了
+        receive = null;
+    }
+    return result;
+}
+```
+
+NetworkReceive为null了，下次就可以读取一条新的数据了。
+
+---
+
+
+
+
+
+##### Selector类的addToCompletedReceives()方法
+
+每次循环只拿出一个客户端的一个请求放到completedReceives里去。
+
+KSelector对于某个客户端，StagedReceives里可能有多个请求，但是completedReceives里只有一个请求。而且这个请求已经被放到RequestQueue里去了，取消了OP_WRITE事件关注，而且对于这个客户端后面不会再读取新的请求出来了。
+
+下一次循环，只有关注了OP_WRITE事件，才会把StagedReceives里的请求放到completedReceives里去。
+
+所以，同一时间，一个客户端只可能有一个Request在这个RequestQueue里，必须得等到这个请求处理完毕后，重新关注OP_WRITE，才能处理这个客户端的下一个请求。
