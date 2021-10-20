@@ -43,3 +43,33 @@ MappedByteBuffer如何将.index文件映射到内存里，这样向磁盘写文�
 
 基于FileChannel从ByteBuffer中读取数据，然后写入OS Cache（操作系统管理的内存），然后每隔一段时间，将OS Cache中的数据写入磁盘。
 
+#### 深入分析写入日志磁盘文件的每一条日志是什么格式
+
+1 byte 等于8个 bit，也就是1个字节等于8个比特位。
+
+1个字节是8位，int占4个字节32位，long占8个字节64位。
+
+8位是什么意思呢？比如说3，可以转化为8位的二进制数字：0000 0011。
+
+#### Kafka Broker网络通信模型
+
+![Kafka Broker网络通信模型](Producer-写磁盘文件.assets/Kafka Broker网络通信模型.png)
+
+##### Reactor模式
+
+IO多路复用，由一个线程来监听多路连接，同步等待一个或多个IO事件的到来，然后把事件交给对应的Handler线程来处理，这就叫Reactor模式。
+
+基本上，只要底层的高性能网络通信就离不开Reactor模式。像Netty、Redis都是使用Reactor模式。
+
+网络通信模型的发展如下：
+
+单线程=》多线程=》线程池=》Reactor模型
+
+##### Kafka所采用的的Reactor模型
+
+<img src="Producer-写磁盘文件.assets/image-20211020233810655.png" alt="image-20211020233810655" style="zoom:50%;" />
+
+##### Kafka网络通信模型总结
+
+1. Broker中有一个Acceptor（mainReactor）监听新连接的到来，与新连接建立之后，轮询选择一个Processor（subReactor）管理这个连接；
+2. 
