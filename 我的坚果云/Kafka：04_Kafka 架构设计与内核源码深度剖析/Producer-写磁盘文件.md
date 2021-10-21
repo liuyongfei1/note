@@ -53,7 +53,7 @@ MappedByteBuffer如何将.index文件映射到内存里，这样向磁盘写文�
 
 #### Kafka Broker网络通信模型
 
-![Kafka Broker网络通信模型](Producer-写磁盘文件.assets/Kafka Broker网络通信模型.png)
+![Kafka Broker网络通信模型](Producer-写磁盘文件.assets/Kafka Broker网络通信模型-4823836.png)
 
 ##### Reactor模式
 
@@ -72,7 +72,26 @@ IO多路复用，由一个线程来监听多路连接，同步等待一个或多
 ##### Kafka网络通信模型总结
 
 1. Broker中有一个Acceptor（mainReactor）监听新连接的到来，与新连接建立之后，轮询选择一个Processor（subReactor）管理这个连接；
-2. 
+2. 而Processor或监听其管理的连接，当事件到达之后，读取数据封装成Request，并将Request放入共享请求队列中；
+3. 然后IO线程池不断的从该队列中取出请求，执行真正的处理。处理完之后将响应发送给Processor对应的响应队列中去，然后由Processor将Response返回给客户端。
+
+##### 生产者-消费者模式
+
+每个listener只有一个Acceptor线程，因为它只是作为新建连接再分发，没有过多的逻辑，很轻量，一个足矣。
+
+Processor线程在Kafka中称之为网络线程，默认的网络线程有3个，对应的参数是num.network.threads。可以根据实际业务动态增减。
+
+还有个IO线程池，即KafkaRequestHandlerPool，执行真正的处理，对应的参数是：num.io.threads，默认是8个。IO线程处理完之后，将Response放入对应的Processor，由Processor将响应返回给客户端。
+
+可以看到网络线程和IO线程之间利用经典的生产者-消费者模式，不论是用于处理Request的请求队列，还是IO处理完返回的Response。
+
+这样的好处是什么？生产者和消费者之间解耦了，可以对生产者和消费者做独立的变更或扩展，并且可以平衡两者的处理能力，例如消费不过来了，就多加一些IO线程。
+
+如果你看过其它中间件源码，你会发现生产者-消费者模式真的是太常见了。 	
+
+写的比较好的一篇文章：https://www.jianshu.com/p/04bae18f6b9b
+
+
 
 ##### 为什么向****.index文件写和向****.log文件写使用不同的技术呢？
 
@@ -105,3 +124,10 @@ IO多路复用，由一个线程来监听多路连接，同步等待一个或多
 
 元数据更新的机制，会保证每个Broker自己知道自己负责的分区，leader/follower。
 
+#### 拉取数据的FetchRequest是如何构建出来的
+
+一次fetch请求过去，至少要拉取minByte的数据，1字节。
+
+如果连1个字节的数据都没有，则此时需要等待一段时间，最多可以等待500毫秒。
+
+如果连500毫秒之后还是没有新的数据到达这个leader，此时就会返回。
