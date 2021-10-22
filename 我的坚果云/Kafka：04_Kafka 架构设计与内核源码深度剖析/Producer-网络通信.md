@@ -303,16 +303,43 @@ KSelector对于某个客户端，StagedReceives里可能有多个请求，但是
 
 所以，同一时间，一个客户端只可能有一个Request在这个RequestQueue里，必须得等到这个请求处理完毕后，重新关注OP_WRITE，才能处理这个客户端的下一个请求。
 
-### 用于将消息写入磁盘文件的ReplicaManager是什么
+#### Kafka Broker网络通信模型
 
-每个leader写入了一条消息，leader partition的LEO会推进一位；
+![Kafka Broker网络通信模型](Producer-写磁盘文件.assets/Kafka Broker网络通信模型-4912055.png)
 
-但是必须等到所有的follower都同步了这条消息，partition的HW才能整体推进一位。
+##### Reactor模式
 
-消费者只能读取到HW高水位以下的消息。
+IO多路复用，由一个线程来监听多路连接，同步等待一个或多个IO事件的到来，然后把事件交给对应的Handler线程来处理，这就叫Reactor模式。
 
-isr列表，保存了leader和 跟上leader数据同步，没有落后太多数据的follower。
+基本上，只要底层的高性能网络通信就离不开Reactor模式。像Netty、Redis都是使用Reactor模式。
 
-### 主要的几个方面
+网络通信模型的发展如下：
 
-目录组织机制、磁盘文件组织机制、数据文件 +索引文件、数据格式、定时刷新OS Cache、基于NIO/BIO写磁盘的细节。
+单线程=》多线程=》线程池=》Reactor模型
+
+##### Kafka所采用的的Reactor模型
+
+<img src="Producer-写磁盘文件.assets/image-20211020233810655.png" alt="image-20211020233810655" style="zoom:50%;" />
+
+##### Kafka网络通信模型总结
+
+1. Broker中有一个Acceptor（mainReactor）监听新连接的到来，与新连接建立之后，轮询选择一个Processor（subReactor）管理这个连接；
+2. 而Processor或监听其管理的连接，当事件到达之后，读取数据封装成Request，并将Request放入共享请求队列中；
+3. 然后IO线程池不断的从该队列中取出请求，执行真正的处理。处理完之后将响应发送给Processor对应的响应队列中去，然后由Processor将Response返回给客户端。
+
+##### 生产者-消费者模式
+
+每个listener只有一个Acceptor线程，因为它只是作为新建连接再分发，没有过多的逻辑，很轻量，一个足矣。
+
+Processor线程在Kafka中称之为网络线程，默认的网络线程有3个，对应的参数是num.network.threads。可以根据实际业务动态增减。
+
+还有个IO线程池，即KafkaRequestHandlerPool，执行真正的处理，对应的参数是：num.io.threads，默认是8个。IO线程处理完之后，将Response放入对应的Processor，由Processor将响应返回给客户端。
+
+可以看到网络线程和IO线程之间利用经典的生产者-消费者模式，不论是用于处理Request的请求队列，还是IO处理完返回的Response。
+
+这样的好处是什么？生产者和消费者之间解耦了，可以对生产者和消费者做独立的变更或扩展，并且可以平衡两者的处理能力，例如消费不过来了，就多加一些IO线程。
+
+如果你看过其它中间件源码，你会发现生产者-消费者模式真的是太常见了。 	
+
+写的比较好的一篇文章：https://www.jianshu.com/p/04bae18f6b9b
+

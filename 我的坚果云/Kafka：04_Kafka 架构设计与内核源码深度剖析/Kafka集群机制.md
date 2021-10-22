@@ -39,7 +39,7 @@ Controller会注册监听器，监听zk的指定节点，比如："/admin/reassi
 #### 总结：新增一个Broker(rebalance)
 
 1. 需要进行重reblance，重平衡，生成重平衡方案，写入ZK；
-2. Controller感知到后，会在新的Broker上起follower，同步数据。数据同步完后，加入ISR列表，重新选举leader，并将原来的副本从zk里干掉。
+2. Controller感知到后，会在新的Broker上起follower，同步数据。数据同步完后，加入ISR列表，重新选举leader，并将原来的副本从磁盘和zk里干掉。
 3. 这样就实现了数据的迁移。
 
 #### 总结：挂掉一个Broker（failover机制）
