@@ -47,7 +47,7 @@
 
 - 当前消费到的offset：不断的在消费消息，不停的更新当前消费到的offset；
 
-- LEO：leader partition 已经更新到的一个offset。但是HW在前面，follower只能拉取到HW之前的数据。因为HW后面的数据，不是所有的follower都写入进去了，所以消费者是不能读取的。
+- LEO：leader partition 已经更新到的一个offset（比如写入一条数据，此时LEO=1，但是写入第一条数据的offset=0，LEO永远是大于最后一条数据的offset）。但是HW在前面，follower只能拉取到HW之前的数据。因为HW后面的数据，不是所有的follower都写入进去了，所以消费者是不能读取的。
 
 - HW：
 
@@ -87,3 +87,4 @@ private final AutoCommitTask autoCommitTask;
 ```
 
 就是提交给coordinator所在机器。
+

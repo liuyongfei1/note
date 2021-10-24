@@ -38,15 +38,33 @@ Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll�
 
 maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻塞多长时间。
 
+### Kafka Producer怎么把消息发送给Broker集群的
 
+topic对应的数据是拆分成多个分区分布在不同的机器上的，那么producer在发送消息的时候怎么知道该把数据发送给哪个分区的呢？
 
-### Partitioner组件将消息路由到分区里
+1. 选择把消息发送到哪个topic去；
+2. Kafka有一个提供给客户端的Partitioner组件，它的作用是生产者把消息交给Partitioner组件，然后Partitioner组件会决定把消息发送给哪个分区；
+3. 默认不做任何设置直接发消息的话，会采用轮询的方式，将消息负载均衡的发给各个分区，比如：producer->send(msg)；
+4. 如果发消息的时候指定分区key，那么就会根据这个key的hash值来分发到指定的分区，**这样就可以让相同的key分发到同一个分区里去**。比如用订单id或者用户id做key，这样的话同一个订单id或用户id产生的数据都会路由分发到同一个分区上去，比如：producer->send(orderId, msg)。
 
-#### 不指定分区key将消息负载均衡分到到各分区
+5. 知道要将消息发送给哪个分区之后，就可以找到这个partition的leader所在的broker，然后建立Socket连接跟那台broker建立连接，发送消息了。
+
+Producer（生产者客户端），起码要知道两个元数据：
+
+- 每个topic有几个分区；
+- 每个分区的leader是在哪台broker上。
+
+这两个元数据是怎么拿到的呢？
+
+ Producer会自己从broker上拉取kafka集群的元数据，缓存在自己的client本地客户端上。
+
+#### Partitioner组件将消息路由到分区里
+
+##### 不指定分区key将消息负载均衡分到到各分区
 
 取模（取余），用一个counter递增，然后对分区数进行取模。
 
-#### 指定分区key将消息负载均衡分到到各分区
+##### 指定分区key将消息负载均衡分到到各分区
 
 会通过封装的一个工具类murmur2，实现一个算法。将一个字节数组转换为一个int类型的hash值，因此，只要分区key是一样的，比如说是同样的订单id，此时就一定会生成相同的hash值，那么用hash值对分区数量进行取模，就可以保证路由到的分区也是相同的。
 

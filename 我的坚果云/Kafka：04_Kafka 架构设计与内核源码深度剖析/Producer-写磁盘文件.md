@@ -1,5 +1,11 @@
 ### 写磁盘文件
 
+#### 对应分区目录下的segment磁盘文件是如何构建的
+
+<img src="Producer-写磁盘文件.assets/对应分区目录下的segment文件是如何构建的.png" alt="对应分区目录下的segment文件是如何构建的" style="zoom:80%;" />
+
+
+
 #### 稀疏索引
 
 Broker 端参数` log.index.interval.bytes` 值，默认4KB，即4KB的消息建一条索引。
