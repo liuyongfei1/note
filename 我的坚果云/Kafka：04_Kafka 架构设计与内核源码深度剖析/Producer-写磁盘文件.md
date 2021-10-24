@@ -8,6 +8,8 @@
 
 #### 稀疏索引
 
+<img src="Producer-写磁盘文件.assets/index文件被写入稀疏索引的具体细节.png" alt="index文件被写入稀疏索引的具体细节" style="zoom:80%;" />
+
 Broker 端参数` log.index.interval.bytes` 值，默认4KB，即4KB的消息建一条索引。
 
 往指定的磁盘目录下面写文件，类似这种格式，topic名称-分区序号目录（比如：order-0目录）下面会有这样的文件：
