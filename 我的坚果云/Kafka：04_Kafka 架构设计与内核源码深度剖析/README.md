@@ -24,3 +24,39 @@
 - 拉取消息的原理；
 - offset提交的原理。
 
+#### Kafka自定义的基于TCP/IP的二进制协议
+
+kafka自定义了一组二进制协议，现在是一共包含了43种协议类型，每种协议都有对应的请求和响应，其实可以认为是几十个接口，每个接口对应一种协议。
+
+每一种协议都对应一个Request，一个Response。每个Request和Response都有header和body。
+
+每个协议的Request都有相同的请求头（RequestHeader），不同的请求体。
+
+请求头包含了：
+
+- api_key：就类似于"PRODUCE"，"FETCH"，可以认为是接口的名字；
+- api_version：就是这个API的版本号；
+- correlation_id :类似客户端生成的一次请求的唯一标识号；
+- client_id：就是客户端id；
+
+每个协议的Response也有相同的响应头，就是一个correlation_id，就是对某个请求的响应。
+
+比如说发送消息，就是ProduceRequest和ProduceResponse，代表"PRODUCE"这个接口的请求和响应。
+
+##### ProduceRequest的RequestBody包含：
+
+- transactional_id（事务id）；
+- asks（会告诉broker是只写到leader以后就可以返回响应，还是要写到leader以后还要等所有follower也需要都写完才返回响应）；
+- timeout（如果在指定时间范围比如timeout这个参数设置为30s，30s内不能返回响应，那就得超时，返回一个响应）；
+- topic_data(topic,data(partition,record_set))
+
+​        发给你的数据里会包含很多的batch，batch可能是属于不同topic的，所以会按topic来分组，每个topic又对应了哪些partition，每个partition对应的数据。
+
+按照这种格式，把数据组织好，以字节数组流的形式传过去。
+
+##### ProduceResponse的ResponseBody包含：
+
+broker收到请求做出处理后，会返回响应。包含：
+
+- topic，partition_response(partition,error_code,base_offset,log_append_time,log_start_offset),throttle_time_ms 每个分区对应的响应（有没有异常，写入的时候是从哪个offset开始写的，写入时间）
+

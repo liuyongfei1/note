@@ -20,3 +20,32 @@
 - 如果consumer挂掉，coordinator感知到了之后，就会rebalance，把那个挂掉的consumer消费的分区分配给其它的consumer。
 
 - 如果新增consumer，此时会考虑将已有consumer的分区转移给新增的consumer来进行消费。新的consumer直接会接着那个分区被提交过的offset继续进行消费。
+
+### 一.consumer初始化是如何加入group的
+
+Kafka源码：server/KafkaApis里的JoinGroup =》kafka.coordinator.group.GroupCoordinator类：
+
+1. 一开始各个consumer是：PreparingRebalance
+
+过来一个组成员，就加入group。
+
+2. 都加入完了之后，AwaitingSync状态。这个状态下会进行选举，选举一个leader出来
+
+3. 然后是：CompletingRebalance
+
+<img src="Consumer.assets/Consumer Coordinator是如何选举出来Consumer leader.png" alt="Consumer Coordinator是如何选举出来Consumer leader" style="zoom:80%;" />
+
+#### AutoCommitTask线程是如何执行提交offset任务的？
+
+```java
+org.apache.kafka.clients.consumer.internals
+  
+```
+
+ConsumerCoordinator.java类：
+
+```java
+private final AutoCommitTask autoCommitTask;
+```
+
+就是提交给coordinator所在机器。
