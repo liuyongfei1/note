@@ -39,6 +39,20 @@
 
 当你的一个consumer停机了，重启后，此时就会接着上一次提交的offset继续进行消费。
 
+##### 几个offset
+
+内存里会记录以下几个offset：
+
+- 上一次提交的offset：consumer向coorinator提交offset；
+
+- 当前消费到的offset：不断的在消费消息，不停的更新当前消费到的offset；
+
+- LEO：leader partition 已经更新到的一个offset。但是HW在前面，follower只能拉取到HW之前的数据。因为HW后面的数据，不是所有的follower都写入进去了，所以消费者是不能读取的。
+
+- HW：
+
+  在ISR列表里可能会有多个副本，比如一个leader对应的几个follower，leader和follower之间最小的LEO就是 HW。假设你要拉取一个分区的数据，只有HW之前的数据才能拉取到。
+
 #### 3.rebalance
 
 - 如果consumer挂掉，coordinator感知到了之后，就会rebalance，把那个挂掉的consumer消费的分区分配给其它的consumer。
