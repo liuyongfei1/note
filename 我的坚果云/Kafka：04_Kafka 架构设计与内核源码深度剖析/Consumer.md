@@ -1,5 +1,19 @@
 ### Consumer端主要知识点
 
+#### consumer group coordinator
+
+每个consumer group都会选择一个broker做为自己的coordinator，它负责监控这个消费组里的各个消费者的心跳，判断是否宕机，以及开启rebalance的。
+
+它主要负责rebalance的，说白了你的consumer group中的每个consumer启动完毕后就会根据选举出来的这个coordinator所在的broker的机器进行通信，然后由coordinator分配分区给consumer来进行消费。
+
+##### 那么是怎么选哪一个broker做为coordinator
+
+1. 首先对group-id进行hash，得出一个数字；
+2. 接着对__consumer_offsets的分区数量取模，默认是50个分区；
+3. 就可以找到你的这个consumer group的offset要提交到__consumer_offsets哪个分区了；
+4. __consumer_offsets分区的副本数量默认来说是1，也就是只有1个leader，然后对这个分区找到对应的leader所在的broker就是这个consumer group的coordinator了；
+5. 接着这个consumer group里的所有消费者就会与这个coordinator建立Socket连接，发起心跳，coordinator就会对这个consumer进行监控。
+
 有个consumer-group的概念。
 
 #### 1.消费过程
