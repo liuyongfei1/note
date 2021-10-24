@@ -16,6 +16,16 @@
 
 有个consumer-group的概念。
 
+#### Coordinator和Consumer Leader如何协作指定分区方案
+
+1. 一个Consumer group里的consumer都启动后，会找到coordinator；
+
+2. 每个consumer会发出 joinGroup请求，coordinator会等待一段时间，确保group里的每个consumer都进来发送 joinGroup请求后，就可以知道这个组里都有哪些consumer了；
+3. 在这个consumer group里选择一个 consumer当做leader；
+4. 然后通知这个leader，让leader来负责指定分区分配方案（每个consumer要消费哪些分区）；
+5. 这个leader制定好以后，会发送SyncGroup请求，告诉coordinator，分区分配方案指定好了；
+6. 接着coordinator就会把分区方案下发给你各个cosumer，consumer就会知道自己要从哪个分区去消费数据了，然后与指定分区的leader broker开始进行socket连接以及消费消息。
+
 #### 1.消费过程
 
 1. 每个consumer初始化启动完毕，都会发送请求到某一个broker的consumer group coordinator上，加入group；
