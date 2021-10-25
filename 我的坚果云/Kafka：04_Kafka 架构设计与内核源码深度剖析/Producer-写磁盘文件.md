@@ -108,6 +108,18 @@ MappedByteBuffer如何将.index文件映射到内存里，这样向磁盘写文�
 
 isr列表，保存了leader和 跟上leader数据同步，没有落后太多数据的follower。
 
+### 如何已固定的速率将os cache的数据flush到磁盘？
+
+Log.scala：
+
+```scala
+def unflushedMessages() = this.logEndOffset - this.recoveryPoint
+```
+
+假设现在已经flush到磁盘上去的数据，offset=23800，recoverPoint=23801，代表已经flush到磁盘
+
+还存在于os cache中的数据：offset=23900，LEO=23901，这中间就差了100多条数据。
+
 ### 主要的几个方面
 
 目录组织机制、磁盘文件组织机制、数据文件 +索引文件、数据格式、定时刷新OS Cache、基于NIO/BIO写磁盘的细节。
