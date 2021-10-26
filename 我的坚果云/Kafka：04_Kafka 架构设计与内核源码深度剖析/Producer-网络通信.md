@@ -28,7 +28,7 @@ Sender是一个Runnable。
 
 负责从缓冲区里获取消息，发送给broker。
 
-Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll方法里有一个MetadataUpdater组件去拉取元数据，拉取到元数据后，会更新元数据到MetaData里，然后用notifyAll方法唤醒主线程。
+Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll方法里有一个MetadataUpdater组件去拉取元数据，拉取到元数据后，会更新元数据到MetaData里，然后用**notifyAll**方法唤醒主线程。
 
 真正发送请求是调的NetworkClient组件的doSend()方法=>Selector组件（是Kafka中定义的专门用来处理网络通信的组件）。
 
@@ -37,6 +37,16 @@ Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll�
 如果之前从来没有加载过topic的元数据，就会在这一步同步阻塞来等待可以去连接到broker上去拉取元数据过来，缓存到客户端。
 
 maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻塞多长时间。
+
+
+
+wait()方法释放锁，然后进入一个休眠等待再次被人唤醒后获取锁的状态；
+
+此时如果有人获取锁之后，调用notifyAll()，就会把之前调用wait()方法进入休眠的线程给唤醒，让它再次尝试获取锁。
+
+
+
+这里是一个线程同步的方法，MetaData这个类肯定是线程安全的
 
 ### Kafka Producer怎么把消息发送给Broker集群的
 
