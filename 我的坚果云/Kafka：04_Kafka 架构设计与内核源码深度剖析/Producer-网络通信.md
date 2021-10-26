@@ -44,11 +44,11 @@ maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻
 
 ![客户端拉取Topic元数据是怎么按需加载的呢？](Producer-网络通信.assets/客户端拉取Topic元数据是怎么按需加载的呢？.png)
 
+![Producer发送消息时元数据加载过程](Producer-网络通信.assets/Producer发送消息时元数据加载过程.png)
+
 wait()方法释放锁，然后进入一个休眠等待再次被人唤醒后获取锁的状态；
 
 此时如果有人获取锁之后，调用notifyAll()，就会把之前调用wait()方法进入休眠的线程给唤醒，让它再次尝试获取锁。
-
-
 
 这里是一个线程同步的方法，MetaData这个类肯定是线程安全的
 
