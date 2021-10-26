@@ -1,6 +1,68 @@
 ## KafkaProducer初始化的时候会涉及到哪些核心的组件
 
-### RecordAccumulator：将消息打包成batch
+### Kafka客户端设计是如何管理自己的内存的
+
+往内存缓存里放入一条消息：
+
+- 首先要找到这个分区对应的队列，这个队列核心是CopyOnWrite的数据结构；
+- 如何基于内存里的数据结构构造一个缓冲区？
+
+### 将消息放入内存缓冲
+
+![Producer发送消息将消息放入内存缓冲](Producer-网络通信.assets/Producer发送消息将消息放入内存缓冲.png)
+
+### RecordAccumulator
+
+多线程如何并发安全的去创建一个分区对应的Queue？
+
+见：RecordAccumulator.java
+
+```java
+
+public RecordAppendResult append(TopicPartition tp,
+                                     long timestamp,
+                                     byte[] key,
+                                     byte[] value,
+                                     Callback callback,
+                                     long maxTimeToBlock) throws InterruptedException {
+        // We keep track of the number of appending thread to make sure we do not miss batches in
+        // abortIncompleteBatches().
+        appendsInProgress.incrementAndGet();
+        try {
+            // check if we have an in-progress batch
+            // 多个线程来获取或创建这个分区对应的queue，只有一个线程来创建，其它线程直接获取
+            Deque<RecordBatch> dq = getOrCreateDeque(tp);
+            // 对这个queue加锁，只有一个线程能进代码块
+            synchronized (dq) {
+                if (closed)
+                    throw new IllegalStateException("Cannot send after the producer is closed.");
+                RecordAppendResult appendResult = tryAppend(timestamp, key, value, callback, dq);
+                if (appendResult != null)
+                    return appendResult;
+            }
+```
+
+尝试将消息写入队列最近的一个batch中：
+
+```java
+private RecordAppendResult tryAppend(long timestamp, byte[] key, byte[] value, Callback callback, Deque<RecordBatch> deque) {
+    RecordBatch last = deque.peekLast();
+    if (last != null) {
+        FutureRecordMetadata future = last.tryAppend(timestamp, key, value, callback, time.milliseconds());
+        if (future == null)
+            last.close();
+        else
+            return new RecordAppendResult(future, deque.size() > 1 || last.isFull(), false);
+    }
+    return null;
+}
+```
+
+第一次deque为空，直接返回null；
+
+如果batch是存在的，就会将消息放入队列最近的一个batch中。
+
+#### 将消息打包成batch
 
 RecordAccumulator消息累加器，kafka发送消息时，并不是直接将消息从客户端通过网络发送给服务端，而是将消息存储在客户端的消息累加器中，当队列满了或者发送时间已到的时候才会去发送。
 
