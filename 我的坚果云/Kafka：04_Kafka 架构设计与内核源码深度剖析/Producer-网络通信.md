@@ -82,6 +82,51 @@ batch.size 默认16K。
 
 但是有一个问题，如果你发送了一条消息，但是很久都没有达到一个batch大小，所以说要设置一个linger.ms，如果在指定时间范围内，都没凑出来一个batch，那么就必须立即把这个消息发送出去。
 
+#### 基于NIO ByteBuffer为batch分配内存空间
+
+RecordAccumulator.java的append()方法：
+
+```java
+// we don't have an in-progress record batch try to allocate a new batch
+int size = Math.max(this.batchSize, Records.LOG_OVERHEAD + Record.recordSize(key, value));
+log.trace("Allocating a new {} byte message buffer for topic {} partition {}", size, tp.topic(), tp.partition());
+ByteBuffer buffer = free.allocate(size, maxTimeToBlock);
+```
+
+一个batch对应了一块内存空间，要放一堆消息。
+
+batchSize默认大小是16KB，如果你的消息大于了16KB，就会使用你的消息的大小来开辟内存空间；
+
+如果你的消息小于16KB，则就使用16KB来开辟内存空间。
+
+BufferPool.java的allocate()方法：
+
+```java
+// now check if the request is immediately satisfiable with the
+// memory on hand or if we need to block
+int freeListSize = this.free.size() * this.poolableSize;
+```
+
+Deque里的ByteBuffer的数量*16kb = 这时已经缓存的内存空间大小。
+
+availableMemory 剩余的可利用的空间大小。
+
+#### 3个线程一块过来时的场景分析
+
+假设有3个线程，分别为：线程1，线程2，线程3。这三个线程都会获取到1个16kb的ByteBuffer内存。
+
+假设线程2进入了synchronized代码块里面去，基于16kb的ByteBuffer构造一个batch，放入Dequeue里去了。
+
+接着线程3进入sychronized代码块里面去，直接把消息放入Dequeue里已经存在的batch里，那么他手上的一个16kb的ByteBuffer怎么办？
+
+在这里，会将这个16kb的ByteBuffer给放入到BytePool的池子里去，这样就可以保证内存可以复用。
+
+![Producer发送消息将消息放入内存缓冲-double check](Producer-网络通信.assets/Producer发送消息将消息放入内存缓冲-double check.png)
+
+其中一个线程构造了一个batch放到Dequeue里去，另外两个线程通过double check的机制就可以直接往batch里写了。那么此时这两个线程申请的ByteBuffer就没用了，就会还到BufferPool里去。
+
+avaliableMemory = 32mb - 16KB * 3。
+
 #### 拉取元数据的网络通信大概过程
 
 先看NetworkClinet类。 进行网络IO异步请求和响应，不是线程安全的。构造MetadataRequest
