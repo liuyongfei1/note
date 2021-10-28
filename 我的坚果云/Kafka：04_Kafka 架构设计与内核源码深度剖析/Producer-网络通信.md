@@ -127,6 +127,145 @@ availableMemory 剩余的可利用的空间大小。
 
 avaliableMemory = 32mb - 16KB * 3。
 
+
+
+#### 11.如何检查筛选出来的目标Broker可以发送数据过去
+
+Sender.java：
+
+```java
+void run(long now) {
+    Cluster cluster = metadata.fetch();
+    // get the list of partitions with data ready to send
+    // 这里边封装了哪些broker可以发送数据过去
+    RecordAccumulator.ReadyCheckResult result = this.accumulator.ready(cluster, now);
+  
+  
+    // remove any nodes we aren't ready to send to
+    Iterator<Node> iter = result.readyNodes.iterator();
+    long notReadyTimeout = Long.MAX_VALUE;
+    while (iter.hasNext()) {
+      Node node = iter.next();
+      // 判断这个broker是否可以发送数据过去
+      if (!this.client.ready(node, now)) {
+        iter.remove();
+        notReadyTimeout = Math.min(notReadyTimeout, this.client.connectionDelay(node, now));
+      }
+    }
+```
+
+NetworkClient.java
+
+```java
+/**
+ * Begin connecting to the given node, return true if we are already connected and ready to send to that node.
+ *
+ * @param node The node to check
+ * @param now The current timestamp
+ * @return True if we are ready to send to the given node
+ */
+@Override
+public boolean ready(Node node, long now) {
+    if (node.isEmpty())
+        throw new IllegalArgumentException("Cannot connect to empty node " + node);
+
+    if (isReady(node, now))
+        return true;
+
+    if (connectionStates.canConnect(node.idString(), now))
+        // if we are interested in sending to a node and we don't have a connection to it, initiate one
+        initiateConnect(node, now);
+
+    return false;
+}
+
+/**
+     * Check if the node with the given id is ready to send more requests.
+     *
+     * @param node The node
+     * @param now The current time in ms
+     * @return true if the node is ready
+     */
+    @Override
+    public boolean isReady(Node node, long now) {
+        // if we need to update our metadata now declare all requests unready to make metadata requests first
+        // priority
+        return !metadataUpdater.isUpdateDue(now) && canSendRequest(node.idString());
+    }
+```
+
+##### 第一条线： !metadataUpdater.isUpdateDue(now)
+
+```java
+@Override
+public boolean isUpdateDue(long now) {
+    return !this.metadataFetchInProgress && this.metadata.timeToNextUpdate(now) == 0;
+}
+```
+
+当前不是处于元数据加载的过程，而且下一次更新元数据的间隔时间为0。意思就是现在没有加载元数据，但是马上就应该要加载元数据了。
+
+如果对上述判断条件取非的话，意思就是 要么正在加载元数据，要么还没到加载元数据的时候。
+
+总结：**这个判断的作用是 如果当前必须要更新元数据了，则不能发送请求，必须要等待这个元数据更新了再次发送请求。**
+
+##### 第二条线：canSendRequest(node.idString())
+
+```java
+/**
+ * Are we connected and ready and able to send more requests to the given connection?
+ *
+ * @param node The node
+ */
+private boolean canSendRequest(String node) {
+    return connectionStates.isReady(node) && selector.isChannelReady(node) && inFlightRequests.canSendMore(node);
+}
+```
+
+1> 有一个broker连接状态的缓存，先检查一下这个broker是否已经建立过连接了，只要建立过连接，才能继续判断其它的条件；
+
+2>selector可以理解为底层封装的就是NIO的Selector，一个Selector可以注册很多Channel，每个Channel就代表了与一个broker建立的连接；
+
+3>inFlightRequests，有个参数可以设置，默认是对同一个broker同一时间最多容忍5个请求发送过去没有响应，多于5个都没有收到响应，则就不能继续发送了。
+
+必须得同时满足这三个条件，才可以认为这个broker可以继续发送数据。、
+
+#### 12.如果跟Broker之间没有建立连接，如何检查是否可以建立连接
+
+NetworkClient.java
+
+```java
+/**
+ * Begin connecting to the given node, return true if we are already connected and ready to send to that node.
+ *
+ * @param node The node to check
+ * @param now The current timestamp
+ * @return True if we are ready to send to the given node
+ */
+@Override
+public boolean ready(Node node, long now) {
+    if (node.isEmpty())
+        throw new IllegalArgumentException("Cannot connect to empty node " + node);
+
+    if (isReady(node, now))
+        return true;
+		// 主要是这个方法：判断能否建立连接
+    if (connectionStates.canConnect(node.idString(), now))
+        // if we are interested in sending to a node and we don't have a connection to it, initiate one
+        initiateConnect(node, now);
+
+    return false;
+}
+```
+
+判断能否跟这个broker建立连接的思路：
+
+1. 先找到这个broker的一个连接状态；
+2. 如果这个连接状态是null，则表明这个broker从来没有建立过连接，直接返回ture，可以建立连接；
+3. 如果这个连接状态已经存在，但当前broker的状态是断开连接，且上一次跟这个broker尝试连接的时间到现在已经超过了重试时间了（默认为100ms），则也可以建立连接。
+
+
+
 #### 拉取元数据的网络通信大概过程
 
 先看NetworkClinet类。 进行网络IO异步请求和响应，不是线程安全的。构造MetadataRequest
@@ -427,6 +566,12 @@ public NetworkReceive read() throws IOException {
 ```
 
 NetworkReceive为null了，下次就可以读取一条新的数据了。
+
+
+
+可以看这篇文章：[java nio解决拆包粘包问题](https://www.jianshu.com/p/5c13ed1c709c?utm_campaign=maleskine&utm_content=note&utm_medium=seo_notes&utm_source=recommendation)
+
+里边有demo代码。
 
 ---
 
