@@ -173,6 +173,8 @@ avaliableMemory = 32mb - 16KB * 3。
 new KafkaProducer<String, String>(props);
 ```
 
+#### 2.1 KafkaProducer初始化时核心源码
+
 KafkaProducer.java：
 
 ```java
@@ -219,7 +221,7 @@ IO线程一启动，Sender里面的业务逻辑就会执行。
 
 这里先默认走到这里时，已经拉取到了topic对应的元数据信息缓存到了客户端：topic->partition->leader/follower + isr。
 
-#### Sender的run()方法
+#### 2.2 Sender的run()方法
 
 1. 获取已经可以发送消息的那些partition，需要满足以下两个条件：
    - 那些partition有已经写满的batch(16kb)；
@@ -230,9 +232,11 @@ IO线程一启动，Sender里面的业务逻辑就会执行。
 5. 将一个broker对应的多个leader partition对应的batch组合成一个ClientRequest，形成一个请求，发送给broker；
 6. 通过NetworkClient走底层的网络通信，把每个broker的ClientRequest给发送过去就可以了。poll()方法是负责实际的进行网络IO通信操作的一个核心方法，处理实际的发送请求和接收响应。
 
+#### 2.3 如何判断内存缓存中的一个batch是可以发送的
 
+如果有batch是可以发送的，则会找到这个batch对应的partition的 leader副本所在 broker，并将这个broker放入set集合中去。
 
-#### 11.如何检查筛选出来的目标Broker可以发送数据过去
+#### 2.4 如何检查筛选出来的目标Broker可以发送数据过去
 
 Sender.java：
 
@@ -333,7 +337,7 @@ private boolean canSendRequest(String node) {
 
 必须得同时满足这三个条件，才可以认为这个broker可以继续发送数据。、
 
-#### 12.如果跟Broker之间没有建立连接，如何检查是否可以建立连接
+#### 2.5 如果跟Broker之间没有建立连接，如何检查是否可以建立连接
 
 NetworkClient.java
 
@@ -366,6 +370,42 @@ public boolean ready(Node node, long now) {
 1. 先找到这个broker的一个连接状态；
 2. 如果这个连接状态是null，则表明这个broker从来没有建立过连接，直接返回ture，可以建立连接；
 3. 如果这个连接状态已经存在，但当前broker的状态是断开连接，且上一次跟这个broker尝试连接的时间到现在已经超过了重试时间了（默认为100ms），则也可以建立连接。
+
+#### 2.6 深入网络通信的起点：通过哪个核心组件与broker建立连接
+
+NetworkClient.java
+
+ready() -> initiateConnect(node, now) ：
+
+```java
+private void initiateConnect(Node node, long now) {
+    String nodeConnectionId = node.idString();
+    try {
+        log.debug("Initiating connection to node {} at {}:{}.", node.id(), node.host(), node.port());
+        this.connectionStates.connecting(nodeConnectionId, now);
+        selector.connect(nodeConnectionId,
+                         new InetSocketAddress(node.host(), node.port()),
+                         this.socketSendBuffer,
+                         this.socketReceiveBuffer);
+    } catch (IOException e) {
+        /* attempt failed, we'll try again after the backoff */
+        connectionStates.disconnected(nodeConnectionId, now);
+        /* maybe the problem is our metadata, update it */
+        metadataUpdater.requestUpdate();
+        log.debug("Error connecting to node {} at {}:{}:", node.id(), node.host(), node.port(), e);
+    }
+}
+```
+
+可以看到，**就是通过Selector组件与broker建立的socket连接**。
+
+发送请求和收取响应都是通过socket读取的。比较核心的两个参数就是socketSendBuffer和socketReceiveBuffer，socket的发送缓冲区和接收缓冲区。
+
+复习一下NIO的课程：
+
+- NIO建立socket连接，其实就是在底层初始化一个SocketChannel，发起一个连接请求；
+- 然后就会把这个SocketChannel给注册到Selector上面，让Selector去监听这个连接事件；
+- 如果broker返回响应说可以建立连接，Selector就会告诉你，你就可以通过API调用来完成底层的网络连接（TCP三次握手）双方都会有一个Socket（操作系统级别的概念，Socket代表了网络通信终端）。
 
 ### Kafka Producer怎么把消息发送给Broker集群的
 
