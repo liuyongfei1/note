@@ -1,5 +1,41 @@
 ## KafkaProducer初始化的时候会涉及到哪些核心的组件
 
+### 一.客户端拉取元数据的网络通信大概过程
+
+先看NetworkClinet类。 进行网络IO异步请求和响应，不是线程安全的。构造MetadataRequest
+
+Sender是一个Runnable。
+
+负责从缓冲区里获取消息，发送给broker。
+
+Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll方法里有一个MetadataUpdater组件去拉取元数据，拉取到元数据后，会更新元数据到MetaData里，然后用**notifyAll**方法唤醒主线程。
+
+真正发送请求是调的NetworkClient组件的doSend()方法=>Selector组件（是Kafka中定义的专门用来处理网络通信的组件）。
+
+首先确保该topic的元数据是可以使用的。
+
+如果之前从来没有加载过topic的元数据，就会在这一步同步阻塞来等待可以去连接到broker上去拉取元数据过来，缓存到客户端。
+
+maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻塞多长时间。
+
+
+
+#### 客户端拉取Topic元数据是怎么按需加载的呢？
+
+![客户端拉取Topic元数据是怎么按需加载的呢？](Producer-网络通信.assets/客户端拉取Topic元数据是怎么按需加载的呢？.png)
+
+![Producer发送消息时元数据加载过程](Producer-网络通信.assets/Producer发送消息时元数据加载过程.png)
+
+wait()方法释放锁，然后进入一个休眠等待再次被人唤醒后获取锁的状态；
+
+此时如果有人获取锁之后，调用notifyAll()，就会把之前调用wait()方法进入休眠的线程给唤醒，让它再次尝试获取锁。
+
+这里是一个线程同步的方法，MetaData这个类肯定是线程安全的
+
+
+
+----------
+
 ### Kafka客户端设计是如何管理自己的内存的
 
 往内存缓存里放入一条消息：
@@ -126,6 +162,73 @@ availableMemory 剩余的可利用的空间大小。
 其中一个线程构造了一个batch放到Dequeue里去，另外两个线程通过double check的机制就可以直接往batch里写了。那么此时这两个线程申请的ByteBuffer就没用了，就会还到BufferPool里去。
 
 avaliableMemory = 32mb - 16KB * 3。
+
+### 二. Kafka生产端唯一的一个IO线程到底在干什么
+
+既然有消息在不断的往内存缓冲里写，那必须得有从内存缓存里拿消息然后往broker发送的处理机制，负责干这个事儿的就是Kafka的这个IO线程。
+
+在创建KafkaProducer的时候初始化的：
+
+```java
+new KafkaProducer<String, String>(props);
+```
+
+KafkaProducer.java：
+
+```java
+private KafkaProducer(ProducerConfig config, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+    try {
+        log.trace("Starting the Kafka producer");
+        Map<String, Object> userProvidedConfigs = config.originals();
+        ......
+        // 处理网络通信的：发送请求和接收响应  
+        NetworkClient client = new NetworkClient(
+                    new Selector(config.getLong(ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG), this.metrics, time, "producer", channelBuilder),
+                    this.metadata,
+                    clientId,
+                    config.getInt(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION),
+                    config.getLong(ProducerConfig.RECONNECT_BACKOFF_MS_CONFIG),
+                    config.getInt(ProducerConfig.SEND_BUFFER_CONFIG),
+                    config.getInt(ProducerConfig.RECEIVE_BUFFER_CONFIG),
+                    this.requestTimeoutMs,
+                    time,
+                    true);
+            this.sender = new Sender(client,
+                    this.metadata,
+                    this.accumulator,
+                    config.getInt(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION) == 1,
+                    config.getInt(ProducerConfig.MAX_REQUEST_SIZE_CONFIG),
+                    (short) parseAcks(config.getString(ProducerConfig.ACKS_CONFIG)),
+                    config.getInt(ProducerConfig.RETRIES_CONFIG),
+                    this.metrics,
+                    Time.SYSTEM,
+                    this.requestTimeoutMs);  
+        String ioThreadName = "kafka-producer-network-thread" + (clientId.length() > 0 ? " | " + clientId : "");
+            this.ioThread = new KafkaThread(ioThreadName, this.sender, true);
+            this.ioThread.start();
+  
+```
+
+这个io线程里封装了Sender的逻辑，sender里又封装了NetworkClient。
+
+NetworkClient是处理网络通信的：发送请求和接收响应；
+
+IO线程一启动，Sender里面的业务逻辑就会执行。
+
+
+
+这里先默认走到这里时，已经拉取到了topic对应的元数据信息缓存到了客户端：topic->partition->leader/follower + isr。
+
+#### Sender的run()方法
+
+1. 获取已经可以发送消息的那些partition，需要满足以下两个条件：
+   - 那些partition有已经写满的batch(16kb)；
+   - batch创建的时间到现在已经超过了linger.ms；
+2. 如果有些topic对应的元数据没有拉取到，则标记一下，后边要重新拉取元数据；
+3. 检查一下是否准备好向哪些broker发送数据了，如果还没有跟那些broker建立连接，必须在这里建立连接，基于底层的NIO来建立TCP连接；
+4. 你有很多partition可以发送数据，此时检查一下有哪些partition的leader是在同一个broker上，则按broker对partition分组，找到一个broker对应的多个batch。如果一个batch在内存缓冲中停留的时间超过了60s，则超时不要；
+5. 将一个broker对应的多个leader partition对应的batch组合成一个ClientRequest，形成一个请求，发送给broker；
+6. 通过NetworkClient走底层的网络通信，把每个broker的ClientRequest给发送过去就可以了。poll()方法是负责实际的进行网络IO通信操作的一个核心方法，处理实际的发送请求和接收响应。
 
 
 
@@ -263,40 +366,6 @@ public boolean ready(Node node, long now) {
 1. 先找到这个broker的一个连接状态；
 2. 如果这个连接状态是null，则表明这个broker从来没有建立过连接，直接返回ture，可以建立连接；
 3. 如果这个连接状态已经存在，但当前broker的状态是断开连接，且上一次跟这个broker尝试连接的时间到现在已经超过了重试时间了（默认为100ms），则也可以建立连接。
-
-
-
-#### 拉取元数据的网络通信大概过程
-
-先看NetworkClinet类。 进行网络IO异步请求和响应，不是线程安全的。构造MetadataRequest
-
-Sender是一个Runnable。
-
-负责从缓冲区里获取消息，发送给broker。
-
-Sender的run方法里，对应的NetworkClient里面有一个poll方法，poll方法里有一个MetadataUpdater组件去拉取元数据，拉取到元数据后，会更新元数据到MetaData里，然后用**notifyAll**方法唤醒主线程。
-
-真正发送请求是调的NetworkClient组件的doSend()方法=>Selector组件（是Kafka中定义的专门用来处理网络通信的组件）。
-
-首先确保该topic的元数据是可以使用的。
-
-如果之前从来没有加载过topic的元数据，就会在这一步同步阻塞来等待可以去连接到broker上去拉取元数据过来，缓存到客户端。
-
-maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻塞多长时间。
-
-
-
-#### 客户端拉取Topic元数据是怎么按需加载的呢？
-
-![客户端拉取Topic元数据是怎么按需加载的呢？](Producer-网络通信.assets/客户端拉取Topic元数据是怎么按需加载的呢？.png)
-
-![Producer发送消息时元数据加载过程](Producer-网络通信.assets/Producer发送消息时元数据加载过程.png)
-
-wait()方法释放锁，然后进入一个休眠等待再次被人唤醒后获取锁的状态；
-
-此时如果有人获取锁之后，调用notifyAll()，就会把之前调用wait()方法进入休眠的线程给唤醒，让它再次尝试获取锁。
-
-这里是一个线程同步的方法，MetaData这个类肯定是线程安全的
 
 ### Kafka Producer怎么把消息发送给Broker集群的
 
