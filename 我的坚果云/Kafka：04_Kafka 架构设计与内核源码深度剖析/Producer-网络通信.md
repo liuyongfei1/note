@@ -378,11 +378,16 @@ NetworkClient.java
 ready() -> initiateConnect(node, now) ：
 
 ```java
+/**
+ * Initiate a connection to the given node
+ */
 private void initiateConnect(Node node, long now) {
     String nodeConnectionId = node.idString();
     try {
         log.debug("Initiating connection to node {} at {}:{}.", node.id(), node.host(), node.port());
         this.connectionStates.connecting(nodeConnectionId, now);
+        // 底层建立socket连接
+        // 发送缓冲区大小(128KB)，接收缓冲区大小(32KB)。
         selector.connect(nodeConnectionId,
                          new InetSocketAddress(node.host(), node.port()),
                          this.socketSendBuffer,
@@ -399,13 +404,83 @@ private void initiateConnect(Node node, long now) {
 
 可以看到，**就是通过Selector组件与broker建立的socket连接**。
 
-发送请求和收取响应都是通过socket读取的。比较核心的两个参数就是socketSendBuffer和socketReceiveBuffer，socket的发送缓冲区和接收缓冲区。
+Selector类：
+
+```java
+A nioSelector interface for doing non-blocking multi-connection network I/O.
+```
+
+针对多个Broker的网络连接，执行非阻塞的IO操作。
+
+发送请求和收取响应都是通过socket读取的。比较核心的两个参数就是socketSendBuffer和socketReceiveBuffer，socket的发送缓冲区和接收缓冲区。在工业级的网络通信开发里面，socketSendBuffer和socketReceiveBuffer 这连个核心参数都是必须设置的。
+
+<img src="Producer-网络通信.assets/NetworkClient.png" alt="NetworkClient" style="zoom:80%;" />
 
 复习一下NIO的课程：
 
 - NIO建立socket连接，其实就是在底层初始化一个SocketChannel，发起一个连接请求；
+
 - 然后就会把这个SocketChannel给注册到Selector上面，让Selector去监听这个连接事件；
+
 - 如果broker返回响应说可以建立连接，Selector就会告诉你，你就可以通过API调用来完成底层的网络连接（TCP三次握手）双方都会有一个Socket（操作系统级别的概念，Socket代表了网络通信终端）。
+
+  ```java
+  SelectionKey key = socketChannel.register(nioSelector, SelectionKey.OP_CONNECT);
+  ```
+
+​      发起连接之后，直接把这个SocketChannel给注册到Selector上去了，让Selector监视这个SocketChannel的OP_CONNECT事件，是否有人同意跟他建立连接。
+
+​     会获取到一个Selectionkey，大致上可以理解为与SocketChannel是一一对应的。
+
+#### 2.7 KafkaChannel是如何对原生的Java NIO的SocketChannel进行封装的？
+
+broker id 对应一个网络连接，一个网络连接对应一个KafkaChannel，底层对应的是SocketChannel，SocketChannel对应的是最底层的网络通信层面的一个Socket，Socket通信其实就是基于TCP协议建立的连接，一个端口对应另一个端口，两者进行通信。
+
+#### 2.8 Kafka封装的Selector是如何与broker建立连接的？
+
+NetworkClient.java的initiateConnect() -> selector.connect()
+
+Selector的connect()方法：
+
+```java
+public void connect(String id, InetSocketAddress address, int sendBufferSize, int receiveBufferSize) throws IOException {
+    if (this.channels.containsKey(id))
+        throw new IllegalStateException("There is already a connection for id " + id);
+
+    SocketChannel socketChannel = SocketChannel.open();
+    socketChannel.configureBlocking(false);
+    Socket socket = socketChannel.socket();
+    socket.setKeepAlive(true);
+    if (sendBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
+        socket.setSendBufferSize(sendBufferSize);
+    if (receiveBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
+        socket.setReceiveBufferSize(receiveBufferSize);
+    socket.setTcpNoDelay(true);
+    boolean connected;
+    try {
+        connected = socketChannel.connect(address);
+    } catch (UnresolvedAddressException e) {
+        socketChannel.close();
+        throw new IOException("Can't resolve address: " + address, e);
+    } catch (IOException e) {
+        socketChannel.close();
+        throw e;
+    }
+    SelectionKey key = socketChannel.register(nioSelector, SelectionKey.OP_CONNECT);
+    KafkaChannel channel = channelBuilder.buildChannel(id, key, maxReceiveSize);
+    key.attach(channel);
+    this.channels.put(id, channel);
+
+    if (connected) {
+        // OP_CONNECT won't trigger for immediately connected channels
+        log.debug("Immediately connected to node {}", channel.id());
+        immediatelyConnectedKeys.add(key);
+        key.interestOps(0);
+    }
+}
+```
+
+看到这里的代码是非常熟悉的，就是基于底层的Java NIO来做的。非常关键的参数：socket发送缓冲区和接收缓冲区，分别是128kb和32kb。
 
 ### Kafka Producer怎么把消息发送给Broker集群的
 
@@ -486,51 +561,7 @@ NetWorkClient的poll方法是负责进行网络IO通信操作的一个核心方�
 
 元数据加载的响应是如何来处理的？
 
-#### 通过哪个核心组件与Broker建立连接？
 
-NetworkClient类的 initiateConnect()方法：
-
-```java
-/**
- * Initiate a connection to the given node
- */
-private void initiateConnect(Node node, long now) {
-    String nodeConnectionId = node.idString();
-    try {
-        log.debug("Initiating connection to node {} at {}:{}.", node.id(), node.host(), node.port());
-        this.connectionStates.connecting(nodeConnectionId, now);
-        // 底层建立socket连接
-        // 发送缓冲区大小(128KB)，接收缓冲区大小(32KB)。
-        selector.connect(nodeConnectionId,
-                         new InetSocketAddress(node.host(), node.port()),
-                         this.socketSendBuffer,
-                         this.socketReceiveBuffer);
-    } catch (IOException e) {
-        /* attempt failed, we'll try again after the backoff */
-        connectionStates.disconnected(nodeConnectionId, now);
-        /* maybe the problem is our metadata, update it */
-        metadataUpdater.requestUpdate();
-        log.debug("Error connecting to node {} at {}:{}:", node.id(), node.host(), node.port(), e);
-    }
-}
-```
-
-在工业级的网络通信开发里面，socketSendBuffer和socketReceiveBuffer 这连个核心参数都是必须设置的。
-
-Selector的组件进行连接，之前学习NIO的课程就知道：
-
-1. NIO建立连接其实就是在底层初始化一个SocketChannel发起一个连接的请求；
-2. 就会把SocketChannel注册到Selector上面；
-3. Selector会监听这个SocketChannel连接的事件；
-4. 如果Broker返回的响应说可以建立连接，Selector就会告诉你，你就可以通过一个API的调用，完成底层的网络连接，TCP三层握手。
-
-Selector类：
-
-```java
-A nioSelector interface for doing non-blocking multi-connection network I/O.
-```
-
-针对多个Broker的网络连接，执行非阻塞的IO操作。=》 可以复习前面的NIO课程。
 
 #### Selector类的connect()方法
 
