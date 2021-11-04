@@ -15,7 +15,7 @@ aop底层是使用**动态代理**方式来增强类中的某个方法。
 
 <img src="AOP相关.assets/image-20211103084907729.png" alt="image-20211103084907729" style="zoom:50%;" />
 
-https://www.bilibili.com/video/BV1Vf4y127N5?p=28
+
 
 ### AOP术语
 
@@ -74,3 +74,36 @@ public class User {
 
 是动作，把通知应用到切入点的过程就叫做切面。
 
+https://www.bilibili.com/video/BV1Vf4y127N5?p=29&spm_id_from=pageDriver
+
+bean1.xml中，需要：
+
+
+
+##### 相同的切入点抽取
+
+相同的切入点抽取一下，做成公共的。 =》 @Pointcut()
+
+##### 多个增强类都会同一个方法进行增强，可以设置增强类优先级
+
+在增强类上面添加注解 @Order(数字)，数字越小，优先级越高。
+
+
+
+### jdbcTemplate
+
+Spring对jdbc进行封装，使用jdbcTemplate 可以很方便的对数据库进行增删改查操作。
+
+
+
+![image-20211104092737186](AOP相关.assets/image-20211104092737186.png)
+
+参数是可变参数，可以用数组的形式：
+
+![image-20211104092815669](AOP相关.assets/image-20211104092815669.png)
+
+效果是一样的。
+
+P34：
+
+https://www.bilibili.com/video/BV1Vf4y127N5?p=34&spm_id_from=pageDriver
