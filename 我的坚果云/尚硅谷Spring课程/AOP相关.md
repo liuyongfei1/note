@@ -107,3 +107,36 @@ Spring对jdbc进行封装，使用jdbcTemplate 可以很方便的对数据库进
 P34：
 
 https://www.bilibili.com/video/BV1Vf4y127N5?p=34&spm_id_from=pageDriver
+
+### 事务
+
+事务是数据库操作基本单元，逻辑上一组操作，要么都成功，如果有一个失败，所有操作都失败。
+
+事务四个特性（ACID）
+
+#### 原子性
+
+#### 一致性
+
+#### 隔离性
+
+#### 持久性
+
+事务一般加在 JavaEE三层结构（Web + Service + Dao）中的Service层。
+
+
+
+#### Spring中进行事务管理
+
+两种方式，分别是编程式事务和声明式事务。
+
+最常用的是 声明式事务。
+
+##### 声明式事务
+
+基于注解方式实现和基于xml方式实现。
+
+在Spring中，进行声明式事务管理，底层就是使用AOP。
+
+https://www.bilibili.com/video/BV1Vf4y127N5?p=44&spm_id_from=pageDriver
+
