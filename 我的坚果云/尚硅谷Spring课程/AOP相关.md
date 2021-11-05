@@ -140,3 +140,38 @@ https://www.bilibili.com/video/BV1Vf4y127N5?p=34&spm_id_from=pageDriver
 
 https://www.bilibili.com/video/BV1Vf4y127N5?p=44&spm_id_from=pageDriver
 
+##### 事务的传播级别
+
+
+
+##### 事务的隔离级别
+
+如果不考虑事务的隔离性，就会产生以下三个问题：
+
+一个未提交的事务 能读到另一个未提交事务里变化的数据
+
+<img src="AOP相关.assets/image-20211105225847874.png" alt="image-20211105225847874" style="zoom:50%;" />
+
+**脏读**
+
+当 右边的事务一回滚，左边事务读到的数据就不对了，就是脏读。
+
+**不可重复读**
+
+一个未提交事务读到了另一个已提交事务修改的数据，这就叫不可重复读。
+
+<img src="AOP相关.assets/image-20211105230203989.png" alt="image-20211105230203989" style="zoom:50%;" />
+
+##### 虚读
+
+一个未提交事务读到了另一个已提交事务添加的数据，这就叫虚读。
+
+##### 怎么解决
+
+通过设置事务的隔离级别，就能解决上面的这三个问题。
+
+<img src="AOP相关.assets/image-20211105230549431.png" alt="image-20211105230549431" style="zoom:50%;" />
+
+![image-20211105230732733](AOP相关.assets/image-20211105230732733.png)
+
+mysql默认的就是 REPEATABLE READ。
