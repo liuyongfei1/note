@@ -220,13 +220,13 @@ registerBean源码：
 
 
 
-#### Spring5整合JUnit5
+#### Spring5整合JUnit
 
 添加spring-test.jar包。
 
 @RunWith(SpringJunit4ClassRunner.class)  => 选择单元测试框架的版本
 
-##### 整合Junit4
+##### 
 
 xml文件：
 
@@ -284,6 +284,8 @@ public class UserService {
 }
 ```
 
+##### 整合Junit4
+
 单元测试类：
 
 ```java
@@ -314,5 +316,30 @@ public class TestDemo2 {
 userService add ...
 userDao add ....
 单元测试结束...
+```
+
+##### 整合Junit5
+
+```java
+/**
+ * 使用JUint5框架
+ *
+ * @author Liuyongfei
+ * @date 2021/11/6 17:01
+ */
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration("classpath:bean2.xml")
+public class TestJUnit5 {
+
+    @Autowired
+    private UserService userService;
+
+    @Test
+    public void test1() {
+        System.out.println("junit5单元测试开始...");
+        userService.add();
+        System.out.println("junit5单元测试结束...");
+    }
+}
 ```
 
