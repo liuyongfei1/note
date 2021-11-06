@@ -186,9 +186,15 @@ https://www.bilibili.com/video/BV1Vf4y127N5?p=49&spm_id_from=pageDriver
 
 #### Spring5框架新功能
 
+##### spring5.0框架自带了通用的日志封装
+
+但也支持整合其他日志框架，比如Log4j2，但不支持Log4j。
+
+如果非要用Log4j，则需要降级spring到4.*版本。
+
 ##### 函数式风格创建对象
 
-比如手动创建对象，然后交给spring管理，可以借助GenericApplicationContext：
+支持用lambda表达式，手动创建对象，然后交给spring管理，可以借助GenericApplicationContext：
 
 ```java
 /**
@@ -216,7 +222,7 @@ registerBean源码：
  registerBean(@Nullable String beanName, Class<T> beanClass, @Nullable Supplier<T> supplier, BeanDefinitionCustomizer... customizers) {
 ```
 
-第一个参数可传，可不传
+第一个参数可传，可不传。
 
 
 
@@ -226,7 +232,7 @@ registerBean源码：
 
 @RunWith(SpringJunit4ClassRunner.class)  => 选择单元测试框架的版本
 
-##### 
+
 
 xml文件：
 
@@ -327,8 +333,10 @@ userDao add ....
  * @author Liuyongfei
  * @date 2021/11/6 17:01
  */
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration("classpath:bean2.xml")
+//@ExtendWith(SpringExtension.class)
+//@ContextConfiguration("classpath:bean2.xml")
+// 这个复合注解可以替代上面这两个注解
+@SpringJUnitConfig(locations = "classpath:bean2.xml")
 public class TestJUnit5 {
 
     @Autowired
