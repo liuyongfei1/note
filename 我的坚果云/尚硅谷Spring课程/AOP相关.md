@@ -220,13 +220,99 @@ registerBean源码：
 
 
 
-#### Spring5整合Junit5
+#### Spring5整合JUnit5
 
 添加spring-test.jar包。
 
-
-
 @RunWith(SpringJunit4ClassRunner.class)  => 选择单元测试框架的版本
 
+##### 整合Junit4
 
+xml文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+       <!-- 组件扫描 -->
+       <context:component-scan base-package="com.fullstackboy"></context:component-scan>
+</beans>
+```
+
+DAO实现类：
+
+```java
+/**
+ * UserDAO组件实现类
+ *
+ * @author Liuyongfei
+ * @date 2021/11/6 17:09
+ */
+@Repository
+public class UserDAOImpl implements UserDAO{
+
+    @Override
+    public void add() {
+        System.out.println("userDao add ....");
+    }
+}
+```
+
+Service：
+
+```java
+/**
+ * UserService组件
+ *
+ * @author Liuyongfei
+ * @date 2021/11/6 17:08
+ */
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDAO userDAO;
+
+    public void add() {
+        System.out.println("userService add ...");
+        userDAO.add();
+    }
+}
+```
+
+单元测试类：
+
+```java
+/**
+ * 使用JUint4框架
+ *
+ * @author Liuyongfei
+ * @date 2021/11/6 17:01
+ */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath:bean2.xml")
+public class TestDemo2 {
+
+    @Autowired
+    private UserService userService;
+
+    @Test
+    public void test1() {
+        System.out.println("单元测试开始...");
+        userService.add();
+        System.out.println("单元测试结束...");
+    }
+}
+```
+
+```txt
+单元测试开始...
+userService add ...
+userDao add ....
+单元测试结束...
+```
 
