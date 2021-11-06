@@ -1,3 +1,5 @@
+
+
 ### AOP（概念）
 
 面相切面编程。利用AOP可以是业务逻辑的各个部分分离开来，从而使得业务逻辑各部分之间的耦合度降低。
@@ -146,7 +148,7 @@ https://www.bilibili.com/video/BV1Vf4y127N5?p=44&spm_id_from=pageDriver
 
 ##### 事务的隔离级别
 
-如果不考虑事务的隔离性，就会产生以下三个问题：
+如果不考虑事务的隔离性，就会产生三个问题：脏读、不可重复读、虚读。
 
 一个未提交的事务 能读到另一个未提交事务里变化的数据
 
@@ -175,3 +177,48 @@ https://www.bilibili.com/video/BV1Vf4y127N5?p=44&spm_id_from=pageDriver
 ![image-20211105230732733](AOP相关.assets/image-20211105230732733.png)
 
 mysql默认的就是 REPEATABLE READ。
+
+**rollbackFor**
+
+设置出现哪些异常进行事务回滚。 
+
+https://www.bilibili.com/video/BV1Vf4y127N5?p=49&spm_id_from=pageDriver
+
+#### Spring5框架新功能
+
+##### @Nullable注解
+
+比如手动创建对象，然后交给spring管理，可以借助GenericApplicationContext：
+
+```java
+/**
+     * 测试使用函数风格创建对象，并交给Spring管理
+     */
+    @Test
+    public void testGenericApplicationContext() {
+        GenericApplicationContext context = new GenericApplicationContext();
+
+        // 调用GenericApplicationContext的方法注册bean
+        context.refresh();;
+//        context.registerBean(User1.class, () -> new User1());
+        context.registerBean("user1", User1.class, () -> new User1());
+
+        // 获取在spring中注册的bean对象
+//        User1 user1 = (User1) context.getBean("com.fullstackboy.springdemo.User1");
+        User1 user1 = (User1) context.getBean("user1");
+        System.out.println(user1);
+    }
+```
+
+registerBean源码：
+
+```java
+ registerBean(@Nullable String beanName, Class<T> beanClass, @Nullable Supplier<T> supplier, BeanDefinitionCustomizer... customizers) {
+```
+
+第一个参数可传，可不传
+
+
+
+
+
