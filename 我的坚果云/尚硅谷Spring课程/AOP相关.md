@@ -186,7 +186,7 @@ https://www.bilibili.com/video/BV1Vf4y127N5?p=49&spm_id_from=pageDriver
 
 #### Spring5框架新功能
 
-##### @Nullable注解
+##### 函数式风格创建对象
 
 比如手动创建对象，然后交给spring管理，可以借助GenericApplicationContext：
 
@@ -219,6 +219,14 @@ registerBean源码：
 第一个参数可传，可不传
 
 
+
+#### Spring5整合Junit5
+
+添加spring-test.jar包。
+
+
+
+@RunWith(SpringJunit4ClassRunner.class)  => 选择单元测试框架的版本
 
 
 
