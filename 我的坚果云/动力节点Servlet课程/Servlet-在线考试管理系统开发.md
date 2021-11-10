@@ -71,9 +71,13 @@ https://www.bilibili.com/video/BV1y5411p7kb?p=17
 
 ```
 response.sendRedirect("请求地址");
-将地址写入到响应包中的响应头中的location属性
+
 
 ```
+
+将地址写入到响应包中的响应头中的location属性：
+
+![image-20211109231958957](Servlet-在线考试管理系统开发.assets/image-20211109231958957.png)
 
 ##### 3.特征
 
@@ -103,8 +107,36 @@ RequestDispatcher report = request.getRequestDispatcher("/资源文件"); // 一
 // 2.将报告对象发送给Tomcat
 report.forward(当前请求对象,当前响应对象);
 
-
 ```
+
+```java
+public class TenServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        System.out.println("洗韭菜......");
+
+        // 1.通过当前请求对象生成资源文件申请报告对象
+        RequestDispatcher report = request.getRequestDispatcher("/eleven");
+
+        // 2.将报告对象发送给Tomcat
+        report.forward(request, response);
+    }
+}
+public class ElevenServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        System.out.println("韭菜炒鸡蛋......");
+    }
+}
+```
+
+
 
 ##### 3.优点
 
@@ -117,3 +149,50 @@ report.forward(当前请求对象,当前响应对象);
 - 参与本次请求的所有Servlet共享同一个的请求协议包；
 - 因此，这些Servlet接收请求的方式与发送的请求方式保持一致。
 
+
+
+### 九、多个Servlet之间数据共享实现方案
+
+https://www.bilibili.com/video/BV1y5411p7kb?p=21
+
+#### 数据共享
+
+OneServlet工作完毕后，将产生的数据交给TwoServlet来使用。
+
+#### 在Servlet中提供四种数据共享方案
+
+##### 1、ServletContext接口
+
+- 来自于Servlet规范中的一个接口，存在于Tomcat的servlet-api.jar；
+- 如果两个Servlet来自于同一个网站，彼此之间通过网站的ServletContext实例对象实现数据共享；
+- 开发人员习惯将ServletContext实例对象称作为【全局作用域对象】。
+
+##### 工作原理
+
+- 每个网站都存在一个全局作用域；
+- 相当于是一个Map。
+
+##### 全局作用于对象生命周期
+
+- 在Http服务t启动过程中，自动为当前网站在内存中创建一个全局作用域对象；
+- 在Http服务器运行期间，一个网站只有一个全局作用域对象；
+- 在Http服务器运行期间，全局作用域对象一直存活；
+- 在Http服务器准备关闭时，负责将当前网站中的全局作用域对象进行销毁处理。
+
+##### 命令实现
+
+```java
+// 1.获取全局作用域对象；
+ServletContext application = request.getServletContext();
+
+// 2.取出数据
+Object data = application.get("key1");
+```
+
+
+
+##### 2、Cookie类；
+
+##### 3、HttpSession接口；
+
+##### 4、HttpServletRequest接口；
