@@ -189,10 +189,25 @@ ServletContext application = request.getServletContext();
 Object data = application.get("key1");
 ```
 
+##### 2、Cookie类
+
+Cookie类来自于Servlet规范中的一个工具类，存在于Servlet-api.jar。
+
+##### 工作原理
+
+- 用户通过浏览器第一次向myWeb网站发送请求申请OneServlet。
+
+- OneServlet在运行期间创建一个Cookie存储当前用户相关数据。
+
+- OneServlet工作完毕后，将Cookie写入到响应头中，交还给当前浏览器。
+- 浏览器收到响应包之后，会将cookie数据存储在浏览器的缓存；
+- 用户通过【同一个浏览器】再次向myWeb网站发送请求申请TwoServlet时 ，【浏览器需要无条件的将myWeb网站之前推送过来的cooke写入到请求头中】发送过去；
+- 此时TwoServlet就可以通过读取请求头中cookie的信息，来拿到OneServlet的数据。
+
+##### 命令实现
 
 
-##### 2、Cookie类；
 
-##### 3、HttpSession接口；
+##### 3、HttpSession接口
 
-##### 4、HttpServletRequest接口；
+##### 4、HttpServletRequest接口
