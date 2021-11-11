@@ -206,8 +206,44 @@ Cookie类来自于Servlet规范中的一个工具类，存在于Servlet-api.jar�
 
 ##### 命令实现
 
+https://www.bilibili.com/video/BV1y5411p7kb?p=24&spm_id_from=pageDriver
+
+```java
+// 从请求头获取参数信息
+doGet(HttpServletRequest request, HttpServletResponse response) {
+	String username,money;
+	// 1.调用请求对象获取[请求头]参数信息
+	userName = request.getParameter("userName");
+	money = request.getParameter("money");
+	
+	// 2.开卡
+	Cookie card1 = new Cookie("userName", userName);
+	Cookie card2 = new Cookie("money", money);
+	
+	// 3.发卡，将cookie写入到响应头交给浏览器
+	response.addCookie(card1);
+	response.addCookie(card2);
+	
+	// 4.通知浏览器将【点餐页面】内容写入到响应体交给浏览器
+}
+```
+
 
 
 ##### 3、HttpSession接口
 
+- HtppSession来自于Servlet规范中的一个接口，存在于servlet-api.jar，实现类也存在于servlet-api.jar中；
+- 如果两个servlet来自同一个网站，并且为同一个浏览器/用户提供服务，那么可以借助HttpSession对象进行数据共享；
+- 开发人员习惯于将HttpSession接口修改对象称为【会话作用域对象】。
+
+**HttpSession**与Cookie的区别（面试题）
+
+- 存储位置不同：
+- 数据类型不同：Cookie对象存储共享数据数据类型只能是String，
+- 数据数量：一个Cookie对象只能存放一个共享数据，HttpSession使用map集合存储共享数据，所以可以存储任意数量的共享数据；
+- 参照物：Cookie相当于客户在服务端的【会员卡】，HttpSession相当于客户在服务端【私人保险柜】。
+
+**命令的相关实现**
+
 ##### 4、HttpServletRequest接口
+
