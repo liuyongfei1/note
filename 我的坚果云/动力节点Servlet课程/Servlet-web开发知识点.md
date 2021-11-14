@@ -364,3 +364,7 @@ public void doGet(HttpServletRequest request,HttpServletResponse response) {
 }
 ```
 
+#### 用户登录流程图
+
+![用户登录流程图](Servlet-web开发知识点.assets/用户登录流程图.png)
+
