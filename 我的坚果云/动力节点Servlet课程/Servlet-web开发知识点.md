@@ -368,3 +368,7 @@ public void doGet(HttpServletRequest request,HttpServletResponse response) {
 
 ![用户登录流程图](Servlet-web开发知识点.assets/用户登录流程图.png)
 
+Java Web 动力节点b站视频：
+
+https://pan.baidu.com/s/1y2MdKVb_gYYV45RRF-jNoQ#list/path=%2Fsharelink3355579678-953534342556374%2FJavaWeb%E5%85%A8%E5%A5%97&parentPath=%2Fsharelink3355579678-953534342556374
+
