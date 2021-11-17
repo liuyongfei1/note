@@ -204,7 +204,106 @@ System.out.println(result);
 
 2、结果可能要等待，会阻塞！
 
+### 8、常用的辅助类
 
+#### 8.1、CountDownLatch
 
+```java
+/**
+ * CountDownLatch的使用demo
+ *
+ * 教室里有6个小学生，在6个小学生都离开教室后，保安会把教室的门锁上。
+ *
+ * @author Liuyongfei
+ * @date 2021/11/17 23:23
+ */
+public class CountDownLatchDemo2 {
 
+    public static void main(String[] args) {
+        // 创建一个计数器
+        CountDownLatch countDownLatch = new CountDownLatch(6);
+
+        for (int i = 1; i <= 6; i++) {
+            new Thread(() -> {
+                System.out.println(Thread.currentThread().getName() + "Go Out");
+
+                // 数量减一
+                countDownLatch.countDown();
+            }, String.valueOf(i)).start();
+        }
+
+        System.out.println("Close Door");
+    }
+}
+```
+
+执行结果：
+
+```bash
+1Go Out
+3Go Out
+2Go Out
+Close Door
+5Go Out
+4Go Out
+6Go Out
+```
+
+可以看到，会发生还有学生没出教室呢，就关门的现象。
+
+解决：
+
+添加： countDownLatch.await();
+
+```java
+/**
+ * CountDownLatch的使用demo
+ *
+ * 教室里有6个小学生，在6个小学生都离开教室后，保安会把教室的门锁上。
+ *
+ * @author Liuyongfei
+ * @date 2021/11/17 23:23
+ */
+public class CountDownLatchDemo2 {
+
+    public static void main(String[] args) {
+        // 创建一个计数器
+        CountDownLatch countDownLatch = new CountDownLatch(6);
+
+        for (int i = 1; i <= 6; i++) {
+            new Thread(() -> {
+                System.out.println(Thread.currentThread().getName() + "Go Out");
+
+                // 数量减一
+                countDownLatch.countDown();
+            }, String.valueOf(i)).start();
+        }
+
+        // 等待计数器归零，再向下执行
+        countDownLatch.await();
+        System.out.println("Close Door");
+    }
+}
+```
+
+执行结果：
+
+```java
+4Go Out
+1Go Out
+2Go Out
+5Go Out
+6Go Out
+3Go Out
+Close Door
+```
+
+**原理**
+
+countDownLatch.countDown(); // 数量减1
+
+countDownLatch.await(); // 等待计数归零，然后再向下执行
+
+- 每次有线程调用countDown()，数量就会减1；
+- 假如计数器变为0，则countDownLatch.await()就会被唤醒，继续向下执行。
 
