@@ -1,10 +1,10 @@
-### 什么是JUC
+### 1、什么是JUC
 
 java并发编程时用到的这几个包：
 
 <img src="Untitled.assets/image-20211116232142444.png" alt="image-20211116232142444" style="zoom:50%;" />
 
-### 线程和进程
+### 2、线程和进程
 
 > 线程、进程
 
@@ -86,7 +86,7 @@ sleep睡觉了，抱着锁睡的，不会释放锁。
 
 - sleep需要捕获异常（因为有可能会发生超时等待）。
 
-### Lock锁
+### 3、Lock锁
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=4&spm_id_from=pageDriver
 
@@ -110,7 +110,7 @@ Lock锁是一个接口，它的实现类是：
 
 
 
-#### 生产者和消费者
+### 4、生产者和消费者
 
 三步曲：
 
@@ -126,9 +126,11 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=7&spm_id_from=pageDriver
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=13&spm_id_from=pageDriver
 
+### 5、8锁现象
 
+### 6、集合类不安全
 
-#### Callable
+### 7、Callable
 
 <img src="什么是JUC.assets/image-20211117225155870.png" alt="image-20211117225155870" style="zoom:50%;" />
 
@@ -300,10 +302,64 @@ Close Door
 
 **原理**
 
-countDownLatch.countDown(); // 数量减1
+`countDownLatch.countDown();` // 数量减1
 
-countDownLatch.await(); // 等待计数归零，然后再向下执行
+`countDownLatch.await();` // 等待计数归零，然后再向下执行
 
 - 每次有线程调用countDown()，数量就会减1；
 - 假如计数器变为0，则countDownLatch.await()就会被唤醒，继续向下执行。
+
+#### 8.2 、CyclicBarrier
+
+是一个加法计数器。 
+
+await会计数，达到指定计数后，会开启一条新的线程继续执行。
+
+https://www.bilibili.com/video/BV1B7411L7tE?p=16&spm_id_from=pageDriver
+
+#### 8.3、Semaphore
+
+ 可以理解为 抢停车位！
+
+`限流的时候会用这个。你的流量入口只有这么大，你一次性只能进来这么多，不可能超过这个数量了。` 
+
+**原理：**
+
+`semphore.accure()`获得（-1），假设如果已经满了，则会等待，直到被释放为止！
+
+`semaphore.release()`释放，会将当前的信号量释放（+1），然后唤醒等待的线程！
+
+**作用：**
+
+多个共享资源互斥时使用！并发限流，控制最大的线程数。
+
+### 9、读写锁
+
+### 10、阻塞队列
+
+<img src="什么是JUC.assets/队列家族.png" alt="队列家族" style="zoom:80%;" />
+
+#### 阻塞
+
+- 如果队列满了，此时再往里边写入，则会阻塞；
+
+- 如果队列空了，此时再从里边进行读取元素，则会阻塞；
+
+List、Set的祖宗类都是 Collection。
+
+####  学会使用队列 
+
+添加、移除
+
+#### 四组API
+
+1、抛出异常
+
+2、不会抛出异常
+
+3、阻塞等待
+
+4、超时等待
+
+https://www.bilibili.com/video/BV1B7411L7tE?p=20&spm_id_from=pageDriver
 
