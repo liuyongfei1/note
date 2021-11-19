@@ -335,6 +335,174 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=16&spm_id_from=pageDriver
 
 ### 9、读写锁
 
+先来看一个案例：
+
+```java
+/**
+ * 读写锁的案例
+ * 1.不使用读写锁
+ * @author Liuyongfei
+ * @date 2021/11/18 09:16
+ */
+public class ReadWriteLockDemo {
+
+    public static void main(String[] args) {
+        MyCache myCache = new MyCache ();
+
+        // 启动5个线程，同时向cache中写入数据
+        for (int i = 1; i <= 5 ; i++) {
+            final int tmp = i;
+            new Thread(() -> {
+                myCache.put(tmp + "", tmp + " value");
+            }, String.valueOf(i)).start();
+        }
+
+        // 启动5个线程，同时从cache中读取数据
+        for (int i = 1; i <= 5; i++) {
+            final  int tmp = i;
+            new Thread(() -> {
+                myCache.get(tmp + "");
+            }, String.valueOf(i)).start();
+        }
+    }
+}
+
+/**
+ * 自定义缓存
+ */
+class MyCache {
+    private volatile HashMap<String, Object> cacheMap = new HashMap<>();
+
+    /**
+     * 存，写
+     * @param key
+     * @param value
+     */
+    public void put(String key, Object value) {
+        System.out.println(Thread.currentThread().getName() + " 写入 " + key);
+        cacheMap.put(key, value);
+        System.out.println(Thread.currentThread().getName() + " 写入ok");
+    }
+
+    /**
+     * 取，读
+     * @param key
+     */
+    public void get(String key) {
+        System.out.println(Thread.currentThread().getName() + " 读取 " + key);
+        Object value = cacheMap.get(key);
+        System.out.println(Thread.currentThread().getName() + " 读取ok：" + value);
+    }
+}
+```
+
+执行结果可能不会符合你的预期：
+
+```bash
+1 写入 1
+3 写入 3
+3 写入ok
+2 写入 2
+2 写入ok
+4 写入 4
+4 写入ok
+1 写入ok
+5 写入 5
+5 写入ok
+1 读取 1
+2 读取 2
+3 读取 3
+3 读取ok：3 value
+1 读取ok：1 value
+2 读取ok：2 value
+4 读取 4
+4 读取ok：4 value
+5 读取 5
+5 读取ok：5 value
+```
+
+可以看到，1这个值还没写入到cache中，就有其它线程也在执行写入操作了。
+
+**解决办法**
+
+使用读写锁，保证在同一时刻写的时候 只能有一个线程能进行写；读的时候多个线程可以同时读。
+
+```java
+/**
+ * 自定义缓存，使用读写锁
+ */
+class MyCacheLock {
+    private volatile HashMap<String, Object> cacheMap = new HashMap<>();
+
+    // private Lock lock = new ReentrantLock();
+    // 声明一个读写锁：更加细粒度的控制
+    private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+
+    /**
+     * 存，写
+     * @param key
+     * @param value
+     */
+    public void put(String key, Object value) {
+        readWriteLock.writeLock().lock();
+        try {
+            System.out.println(Thread.currentThread().getName() + " 写入 " + key);
+            cacheMap.put(key, value);
+            System.out.println(Thread.currentThread().getName() + " 写入ok");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            readWriteLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * 取，读
+     * @param key
+     */
+    public void get(String key) {
+        readWriteLock.readLock().lock();
+        try {
+            System.out.println(Thread.currentThread().getName() + " 读取 " + key);
+            Object value = cacheMap.get(key);
+            System.out.println(Thread.currentThread().getName() + " 读取ok：" + value);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            readWriteLock.readLock().unlock();
+        }
+    }
+}
+```
+
+输出结果：
+
+```bash
+1 写入 1
+1 写入ok
+2 写入 2
+2 写入ok
+3 写入 3
+3 写入ok
+4 写入 4
+4 写入ok
+5 写入 5
+5 写入ok
+1 读取 1
+1 读取ok：1 value
+2 读取 2
+2 读取ok：2 value
+3 读取 3
+3 读取ok：3 value
+4 读取 4
+4 读取ok：4 value
+5 读取 5
+5 读取ok：5 value
+```
+
+
+
 ### 10、阻塞队列
 
 <img src="什么是JUC.assets/队列家族.png" alt="队列家族" style="zoom:80%;" />
@@ -362,4 +530,85 @@ List、Set的祖宗类都是 Collection。
 4、超时等待
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=20&spm_id_from=pageDriver
+
+
+
+> SynchronousQueue同步队列
+
+和其它的BlockingQueue是不一样的。没有容量，进去一个元素，必须等待取出来之后，才能往里边再放一个元素。
+
+### 11、线程池（重点）
+
+线程池：3大方法、7大参数、4种拒绝策略
+
+>  池化技术
+
+程序的运行，本质就是占用系统的资源，如何去优化资源的使用呢 =》池化技术
+
+事先准备好一些资源，有人要用，就来我这里拿，用完之后还给我。
+
+**线程池的好处**
+
+1、降低资源的消耗；
+
+2、提高响应的速度；
+
+3、便于管理。
+
+> 线程池：3大方法
+
+https://www.bilibili.com/video/BV1B7411L7tE?p=23&spm_id_from=pageDriver
+
+> 7大参数
+
+```java
+public static ExecutorService newSingleThreadExecutor() {
+    return new FinalizableDelegatedExecutorService
+        (new ThreadPoolExecutor(1, 1,
+                                0L, TimeUnit.MILLISECONDS,
+                                new LinkedBlockingQueue<Runnable>()));
+}
+
+public static ExecutorService newFixedThreadPool(int nThreads) {
+        return new ThreadPoolExecutor(nThreads, nThreads,
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue<Runnable>());
+    }
+
+public static ExecutorService newCachedThreadPool() {
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue<Runnable>());
+    }
+```
+
+可以发现，开启线程，本质是调用ThreadPoolExecutor。查看ThreadPoolExecutor源码：
+
+```java
+public ThreadPoolExecutor(int corePoolSize, // 核心线程池线程数大小
+                          int maximumPoolSize, // 最大线程池线程数大小
+                          long keepAliveTime, // 超时多久，没有人调用，就会释放(比如银行的窗口，超过1小时没有人来办理业务，就关闭窗口了)
+                          TimeUnit unit, // 超时时间的单位
+                          BlockingQueue<Runnable> workQueue,// 阻塞队列(比如银行的候客区，最多只能容纳3个人)
+                          ThreadFactory threadFactory, // 线程工程，用来创建线程的，一般不用动
+                          RejectedExecutionHandler handler) // 拒绝策略(比如银行的窗口人满了，候客区也满了，这时再有人想办理业务就会被拒绝，不处理这个人的，抛出异常)
+```
+
+可以发现这里边有7个参数。
+
+> 阿里巴巴开发规范中提到，不要用Executors去创建，而是使用ThreadPoolExecutor的方式去创建线程池的原因是什么？
+
+1、看一下源码，这几种方式底层都是通过使用ThreadPoolExecutor的方式去创建线程池，规避资源耗尽的风险；
+
+2、FixedThreadPool和SingleThreadPool、CachedThreadPool和ScheduledThreadPool，允许请求的队列长度为Integer.MAX_VALUE，可能会堆积大量的请求，导致OOM。
+
+>  手动创建一个线程池
+
+```java
+/**
+ * The default rejected execution handler
+ */
+private static final RejectedExecutionHandler defaultHandler =
+    new AbortPolicy();
+```
 
