@@ -916,3 +916,149 @@ public class Test {
 }
 ```
 
+### 14、ForkJoin
+
+> 什么是ForkJoin
+
+- ForkJoin 是jdk1.7提供的一个用于并行执行任务的框架；
+
+- 是一个把**大任务分割**成若干个小任务，最终**汇总每个小任务结果后得到**大任务结果的框架。
+
+<img src="什么是JUC.assets/ForkJoin.png" alt="ForkJoin" style="zoom:50%;" />
+
+在大数量的时候使用。
+
+大数据Map Reduce（把大任务拆分成小任务）。
+
+> ForkJoin特点：工作窃取
+
+任务分割出的子任务会添加到当前工作线程所维护的双端队列中，进入队列的队头。
+
+**当一个工作线程里的队列暂时没有任务时，它会随机从其它工作线程的队列的尾部获取一个任务（工作窃取算法）。**
+
+
+
+<img src="什么是JUC.assets/image-20211120174108254.png" alt="image-20211120174108254" style="zoom: 33%;" />
+
+
+
+> ForkJoin
+
+<img src="什么是JUC.assets/image-20211120180618779.png" alt="image-20211120180618779" style="zoom:50%;" />
+
+<img src="什么是JUC.assets/image-20211120180824592.png" alt="image-20211120180824592" style="zoom:50%;" />
+
+```java
+/**
+ * 使用ForkJoin求和计算的任务
+ *
+ * @author Liuyongfei
+ * @date 2021/11/20 18:12
+ */
+public class ForkJoinDemo extends RecursiveTask<Long> {
+
+    private Long start;
+    private Long end;
+
+    public ForkJoinDemo(Long start, Long end) {
+        this.start = start;
+        this.end = end;
+    }
+
+    /**
+     * 临界值
+     */
+    private Long tmp = 10000L;
+
+    /**
+     * 任务的计算逻辑
+     *
+     * @return 返回计算结果
+     */
+    @Override
+    protected Long compute() {
+
+        if ((end - start) < tmp) {
+            Long sum = 0L;
+            for (Long i = start; i <= end; i++) {
+                sum += i;
+            }
+            return sum;
+        } else {
+            // 使用ForkJoin 递归计算
+            long middle = (start + end) / 2;
+            ForkJoinDemo task1 = new ForkJoinDemo(start, middle);
+
+            // 拆分任务，把任务压入线程队列
+            task1.fork();
+
+            ForkJoinDemo task2 = new ForkJoinDemo(middle + 1, end);
+            // 拆分任务，把任务压入线程队列
+            task2.fork();
+            return  task1.join() + task2.join();
+        }
+    }
+}
+```
+
+```java
+/**
+ * 测试
+ * 1、普通方式
+ * 2、ForkJoin方式
+ * 3、Stream并行流
+ * Stream并行流的效果比其他方式高很多
+ * @author Liuyongfei
+ * @date 2021/11/20 19:13
+ */
+public class Test {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+//        test1(); // sum=500000000500000000,耗费时间=5223
+//          test2(); // sum=500000000500000000,耗费时间=7525
+        test3(); // sum=500000000500000000,耗费时间=818
+    }
+
+    /**
+     * 普通程序员的常规做法
+     */
+    public static void test1() {
+        long start = System.currentTimeMillis();
+        Long sum = 0L;
+
+        for (int i = 1; i <= 10_0000_0000 ; i++) {
+            sum += i;
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("sum=" + sum + ",耗费时间=" + (end - start));
+    }
+
+    /**
+     * 会使用ForkJoin的程序员
+     */
+    public static void  test2() throws ExecutionException, InterruptedException {
+        long start = System.currentTimeMillis();
+
+        ForkJoinPool pool = new ForkJoinPool();
+
+        ForkJoinTask<Long> task = new ForkJoinDemo(0L, 10_0000_0000L);
+
+        ForkJoinTask<Long> submit = pool.submit(task);
+
+        Long data = submit.get();
+
+        long end = System.currentTimeMillis();
+        System.out.println("sum=" + data + ",耗费时间=" + (end - start));
+    }
+
+    public static void test3() {
+        long start = System.currentTimeMillis();
+
+        // Stream并行流
+        long sum = LongStream.rangeClosed(0L, 10_0000_0000).parallel().reduce(0,Long::sum);
+
+        long end = System.currentTimeMillis();
+        System.out.println("sum=" + sum + ",耗费时间=" + (end - start));
+    }
+}
+```
+
