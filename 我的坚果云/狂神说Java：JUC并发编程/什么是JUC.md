@@ -702,6 +702,217 @@ i = 6 时，会启动三个线程：
 
 2、IO密集型：比如你的程序中有15个非常耗IO的任务，那么最大线程数 > 15，比如最大线程数为 30。
 
-### 12、四大函数式接口（重点）
+### 12、四大函数式接口（必须掌握）
 
-https://www.bilibili.com/video/BV1B7411L7tE?p=25&spm_id_from=pageDriver
+新时代的程序员，掌握这几个新的东西：lambda表达式、链式编程、函数式接口、Stream流式计算。
+
+函数式接口：只有一个方法的接口。
+
+<img src="什么是JUC.assets/image-20211120144554096.png" alt="image-20211120144554096" style="zoom:67%;" />
+
+比较典型的是Runnable接口：
+
+```java
+@FunctionalInterface // 函数式接口
+public interface Runnable {
+    /**
+     * When an object implementing interface <code>Runnable</code> is used
+     * to create a thread, starting the thread causes the object's
+     * <code>run</code> method to be called in that separately executing
+     * thread.
+     * <p>
+     * The general contract of the method <code>run</code> is that it may
+     * take any action whatsoever.
+     *
+     * @see     java.lang.Thread#run()
+     */
+    public abstract void run();
+}
+```
+
+> Function函数式接口：传入一个参数，返回类型为R
+
+```java
+/**
+ * 函数型接口
+ * 只要是函数型接口，就可以用lambda表达式简化
+ * @author Liuyongfei
+ * @date 2021/11/20 11:52
+ */
+public class Demo1 {
+    public static void main(String[] args) {
+        // 当不知道怎么写参数的时候，可以去看一下源码。
+        // Function 函数型接口，传入一个参数，返回类型为R
+
+//        Function<String,String> function = new Function<String, String>() {
+//            /**
+//             * Applies this function to the given argument.
+//             *
+//             * @param s the function argument
+//             * @return the function result
+//             */
+//            @Override
+//            public String apply(String str) {
+//                return str;
+//            }
+//        };
+
+        // 只要是函数型接口，就可以用lambda表达式简化
+        Function<String,String> function = (str) -> { return str; };
+
+        System.out.println(function.apply("hello"));
+
+    }
+}
+```
+
+
+
+> 断定型接口：有一个输入参数，返回值只能是boolean值
+
+```java
+/**
+ * 函数式接口之
+ * Predicate： 断定型接口，传入一个参数，返回一个boolean值
+ * @author Liuyongfei
+ * @date 2021/11/20 12:58
+ */
+public class Demo2 {
+    public static void main(String[] args) {
+//        Predicate<String> predicate  = new Predicate<String>() {
+//
+//            /**
+//             * 判断字符串是否为空
+//             * @param s
+//             * @return
+//             */
+//            @Override
+//            public boolean test(String s) {
+//                return s.isEmpty();
+//            }
+//        };
+
+        // 用lambda表达式简化
+        Predicate<String> predicate = (s) -> {return s.isEmpty();};
+        System.out.println(predicate.test(""));
+    }
+}
+```
+
+> Consumer 消费型接口
+
+```java
+/**
+ * 函数式接口之
+ * Consumer：消费型接口，接收参数，没有返回值
+ *
+ * @author Liuyongfei
+ * @date 2021/11/20 14:28
+ */
+public class Demo3 {
+    public static void main(String[] args) {
+        Consumer<String>  consumer = new Consumer<String>() {
+
+            @Override
+            public void accept(String s) {
+                System.out.println("接收参数: " + s);
+            }
+        };
+
+        consumer.accept("hello");
+    }
+}
+```
+
+
+
+> Supplier 供给型接口
+
+```java
+/**
+ * 函数式接口之
+ *
+ * Supplier：供给型接口 没有参数，只有返回值
+ *
+ * @author Liuyongfei
+ * @date 2021/11/20 14:38
+ */
+public class Demo4 {
+    public static void main(String[] args) {
+//        Supplier<Integer> supplier = new Supplier<Integer>() {
+//
+//            /**
+//             * Gets a result.
+//             *
+//             * @return a result
+//             */
+//            @Override
+//            public Integer get() {
+//                System.out.println("get()");
+//                return 1024;
+//            }
+//        };
+
+        // 使用lambda表达式简化
+        Supplier<Integer> supplier = () -> {return 1024;};
+
+        System.out.println(supplier.get());
+    }
+}
+```
+
+### 13、Stream流式计算
+
+> 什么是流式计算
+
+大数据：存储 + 计算
+
+存储，对于我们来说最开始是java的集合框架，比如List、Set、Map，
+
+后来我们学了Mysql，就可以用Mysql来存储，
+
+或者分布式文件系统来进行存储。
+
+这些都是存储东西的，真正的计算应该交给Stream流来操作。
+
+<img src="什么是JUC.assets/image-20211120145810464.png" alt="image-20211120145810464" style="zoom:50%;" />
+
+```java
+/**
+ *
+ * 题目要求：一分钟内完成此题，只能用一行代码实现！
+ * 现在有5个用户！筛选：
+ * 1、ID 必须是偶数
+ * 2、年龄必须大于23岁
+ * 3、用户名转为大写字母
+ * 4、用户名字母倒着排序
+ * 5、只输出一个用户！
+ *
+ * 使用lambda表达式、链式编程、函数式接口、stream流计算 来解决这个题目。
+ *
+ * @author Liuyongfei
+ * @date 2021/11/20 15:11
+ */
+public class Test {
+    public static void main(String[] args) {
+        User user1  = new User(1, "a", 21);
+        User user2  = new User(2, "b", 22);
+        User user3  = new User(3, "c", 23);
+        User user4  = new User(4, "d", 24);
+        User user5  = new User(6, "e", 25);
+
+        // 存入List中，集合就是存储
+        List<User> users = Arrays.asList(user1, user2, user3, user4, user5);
+
+        // 计算交给Stream流
+        users.stream()
+                .filter(u -> { return  u.getId() % 2 == 0;})
+                .filter(u -> { return  u.getAge() > 23;})
+                .map(u -> { return  u.getName().toUpperCase();})
+                .sorted((uu1,uu2) -> {return uu2.compareTo(uu1);})
+                .limit(1)
+                .forEach(System.out::println);
+    }
+}
+```
+
