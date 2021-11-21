@@ -1272,7 +1272,382 @@ y = x * x   // 第4行
 - 懒汉模式
 
   双重检测锁模式的懒汉式单例，简称DCL懒汉式。=》因指令重排可能存在问题，因此加上 volatile修饰。
-  
+
+#### 饿汉模式
+
+```java
+/**
+ * 单例之：饿汉模式
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 17:32
+ */
+public class HungryMan {
+
+    private HungryMan() {
+
+    }
+
+    // 上来不管三七二十一，先创建一个实例
+    private static final HungryMan HUNGRY_MAN = new HungryMan();
+
+
+    public static HungryMan getInstance() {
+        return  HUNGRY_MAN;
+    }
+}
+```
 
 
 
+#### 懒汉模式
+
+第一个案例：
+
+```java
+/**
+ * 单例之 懒汉式模式
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 17:36
+ */
+public class LazyMan {
+
+    private LazyMan() {
+        System.out.println(Thread.currentThread().getName() + " 创建实例ok");
+    }
+
+    private static LazyMan lazyMan;
+
+    public static LazyMan getInstance() {
+        if (lazyMan == null) {
+            lazyMan = new LazyMan();
+        }
+        return lazyMan;
+    }
+
+
+    /**
+     * 测试在多线程并发时，是不是这个实例就被创建了一次
+     * @param args
+     */
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            new Thread(() -> {
+                LazyMan.getInstance();
+            }).start();
+        }
+    }
+
+}
+```
+
+输出结果：
+
+```bash
+Thread-0 创建实例ok
+Thread-1 创建实例ok
+Thread-2 创建实例ok
+Thread-3 创建实例ok
+```
+
+因此，在并发情况下，这样其实就不是单例了。
+
+那么，怎么去优化呢？=》使用 double check + 锁 。
+
+dcl懒汉式单例：
+
+```java
+/**
+ * 单例之 双重检测的锁模式的懒汉式单例 DCL单例模式
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 17:36
+ */
+public class LazyMan2 {
+
+    private LazyMan2() {
+        System.out.println(Thread.currentThread().getName() + " 创建实例ok");
+    }
+
+    private static LazyMan2 lazyMan;
+
+    public static LazyMan2 getInstance() {
+
+        // 双重检测的锁模式的懒汉式单例 DCL单例模式
+        if (lazyMan == null) {
+            synchronized (LazyMan2.class) {
+                if (lazyMan == null) {
+                    lazyMan = new LazyMan2();
+                }
+            }
+        }
+        return lazyMan;
+    }
+
+
+    /**
+     * 测试在多线程并发时，是不是这个实例就被创建了一次
+     * @param args
+     */
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            new Thread(() -> {
+                LazyMan2.getInstance();
+            }).start();
+        }
+    }
+
+}
+```
+
+输出结果：
+
+```bash
+Thread-0 创建实例ok
+```
+
+这种模式在多线程并发情况下基本上是没问题的。但是在极端情况下，还是存在有问题的可能。
+
+问题出在 new LazyMan2() 这个并不是原子性操作。
+
+```java
+/**
+ * 单例之 双重检测的锁模式的懒汉式单例 DCL单例模式 + volatile防止指令重排
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 17:36
+ */
+public class LazyMan2 {
+
+    private LazyMan2() {
+        System.out.println(Thread.currentThread().getName() + " 创建实例ok");
+    }
+
+    private volatile static LazyMan2 lazyMan;
+
+    public static LazyMan2 getInstance() {
+
+        // 双重检测的锁模式的懒汉式单例 DCL单例模式
+        if (lazyMan == null) {
+            synchronized (LazyMan2.class) {
+                if (lazyMan == null) {
+                    lazyMan = new LazyMan2(); // 不是原子性操作。
+                    // 底层会分为3步骤：
+                    // 1.分配内存空间
+                    // 2.执行构造方法，初始化对象
+                    // 3.把这个对象指向这个空间
+                    // 看上去的一行代码，底层其实要执行这三步操作。=》 因此，就有可能会发生指令重排造成问题。
+                    // 比如，期望的执行步骤123
+                    // 但是线程A可能执行的顺序是132，当线程A执行第3步后，
+                    // 此时，线程B进来了，由于线程A已经执行了第3布，因此线程B进来时就会任务 lazyMan不等于null，则就会直接return了。
+                    // 但此时这个lazyMan还没有完成构造，空间是一篇虚无的，就有可能会产生问题。
+
+                    // 那么怎么去解决呢？ =》防止指令重排，给lazyMan修饰符加上 volatile即可解决。
+
+                }
+            }
+        }
+        return lazyMan;
+    }
+
+
+    /**
+     * 测试在多线程并发时，是不是这个实例就被创建了一次
+     * @param args
+     */
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            new Thread(() -> {
+                LazyMan2.getInstance();
+            }).start();
+        }
+    }
+
+}
+```
+
+#### 静态内部类单例
+
+```java
+/**
+ * 单例模式之：利用静态内部类来实现单例模式
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 18:14
+ */
+public class Holder {
+
+    private Holder() {
+
+    }
+
+    private Holder getInstance() {
+        return InnerClass.HOLDER;
+    }
+
+    public static class InnerClass {
+        private static final Holder HOLDER = new Holder();
+    }
+}
+```
+
+
+
+> 通过反射可以破坏单例
+
+```java
+LazyMan2 instance = LazyMan2.getInstance();
+
+// 利用反射来得到单例
+// 获取空参构造器
+Constructor<LazyMan2> declaredConstructor = LazyMan2.class.getDeclaredConstructor(null);
+declaredConstructor.setAccessible(true); // 这一步操作可以无视私有构造器
+
+// 利用反射来得到单例
+LazyMan2 instance2 = declaredConstructor.newInstance();
+
+System.out.println(instance);
+System.out.println(instance2);
+```
+
+然后看一下输出结果：
+
+```bash
+single.LazyMan2@28a418fc
+single.LazyMan2@5305068a
+```
+
+可以看出来，这两个实例的内存地址是不一样的。因此使用反射可以破坏单例。
+
+那么怎么解决呢？
+
+> 怎么防止反射破坏单例：枚举类
+
+道高一尺，魔高一丈。
+
+javap -c
+
+javap -p
+
+java 反编译工具 jad 
+
+```java
+/**
+ * 单例之：枚举类
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 20:47
+ */
+public enum EnumSingle {
+
+    INSTANCE;
+
+    public EnumSingle getInstance() {
+        return INSTANCE;
+    }
+}
+
+class Test {
+    public static void main(String[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        EnumSingle instance1 = EnumSingle.INSTANCE;
+
+        // 去idea的该文件对应的target目录下的对应的.class文件查看，里面有一个无参的构造方法：
+        // private EnumSingle() {
+        // }
+        // 于是这里获取构造器时传参为null
+        Constructor<EnumSingle> declaredConstructor = EnumSingle.class.getDeclaredConstructor(null);
+        declaredConstructor.setAccessible(true);
+        EnumSingle instance2 = declaredConstructor.newInstance();
+
+        System.out.println(instance1);
+        System.out.println(instance2);
+    }
+}
+```
+
+打印 instance2 却会报：
+
+```java
+Exception in thread "main" java.lang.NoSuchMethodException: single.EnumSingle.<init>()
+```
+
+说这个类里边没有空惨的构造方法。
+
+说明从idea里看的这个方式不准。
+
+继续尝试：使用javap -p命令反编译：
+
+```bash
+ ~/Workspace/www/blog-demo/thread-demo/target/classes/single   master ●✚  javap -p EnumSingle.class   
+Compiled from "EnumSingle.java"
+public final class single.EnumSingle extends java.lang.Enum<single.EnumSingle> {
+  public static final single.EnumSingle INSTANCE;
+  private static final single.EnumSingle[] $VALUES;
+  public static single.EnumSingle[] values();
+  public static single.EnumSingle valueOf(java.lang.String);
+  private single.EnumSingle();
+  public single.EnumSingle getInstance();
+  static {};
+}
+```
+
+发现这里也有一个
+
+```bash
+private single.EnumSingle();
+```
+
+无参构造方法。说明通过这种方式还是不准。
+
+找一个更专业的反编译工具 jad（将jad.exe拷贝至该目录）：
+
+<img src="什么是JUC.assets/image-20211121211118796.png" alt="image-20211121211118796" style="zoom:50%;" />
+
+执行：
+
+<img src="什么是JUC.assets/image-20211121211215961.png" alt="image-20211121211215961" style="zoom:50%;" />
+
+然后会在当前目录下生成一个EnumSingle.java文件，这就是最终的反编译源码。打开：
+
+<img src="什么是JUC.assets/image-20211121211434006.png" alt="image-20211121211434006" style="zoom:50%;" />
+
+<img src="什么是JUC.assets/image-20211121211504264.png" alt="image-20211121211504264" style="zoom:50%;" />
+
+从这里看到，这个构造方法需要传两个参数。于是修改我们的代码为：
+
+```java
+ Constructor<EnumSingle> declaredConstructor = EnumSingle.class.getDeclaredConstructor(String.class, int.class);
+        declaredConstructor.setAccessible(true);
+        EnumSingle instance2 = declaredConstructor.newInstance();
+```
+
+输出结果为：
+
+```java
+Exception in thread "main" java.lang.IllegalArgumentException: Cannot reflectively create enum objects
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:417)
+	at single.Test.main(EnumSingle.java:27)
+
+```
+
+这个输出结果就符合了我们的预期。查看newInstance的源代码：
+
+```java
+public T newInstance(Object ... initargs)
+        throws InstantiationException, IllegalAccessException,
+               IllegalArgumentException, InvocationTargetException
+    {
+        if (!override) {
+            if (!Reflection.quickCheckMemberAccess(clazz, modifiers)) {
+                Class<?> caller = Reflection.getCallerClass();
+                checkAccess(caller, clazz, null, modifiers);
+            }
+        }
+        if ((clazz.getModifiers() & Modifier.ENUM) != 0)
+            throw new IllegalArgumentException("Cannot reflectively create enum objects");
+```
+
+**因此，可以利用枚举类来防止通过反射来破坏单例。**
+
+### 19、深入理解CAS
