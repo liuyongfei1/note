@@ -1144,7 +1144,7 @@ Java内存模型，不是现实存在的东西，是一个概念/约定。
 
 需要线程A知道主存中flag的值发生了变化。
 
-### 17、Volidate
+### 17、Volatile
 
 > 1、保证可见性
 
@@ -1180,4 +1180,99 @@ public class VolatileDemo2 {
     }
 }
 ```
+
+> 2、不保证原子性
+
+原子性：不可分割。
+
+线程A在执行的时候，不能被打扰的，也不能被分割。要么同时成功，要么同时失败。
+
+<img src="什么是JUC.assets/image-20211121155736106.png" alt="image-20211121155736106" style="zoom:50%;" />
+
+num++，不是一个原子性操作。
+
+可能会存在多个线程同时进来拿到同一个值，写完再改回去。
+
+>  **如果不加lock，不使用synchronized，怎么保证原子性**？
+
+使用原子类，解决原子性问题。
+
+```java
+/**
+ * volatile不保证原子性
+ *
+ * 我们期望拿到的num值是20000，但实际输出的不是这样。
+ *
+ * @author Liuyongfei
+ * @date 2021/11/21 15:23
+ */
+public class VolatileDemo3 {
+
+//    private static volatile int num = 0;
+    private static volatile AtomicInteger num = new AtomicInteger();
+
+    private static void add() {
+//        num++;
+        num.getAndIncrement(); // AtomicInteger + 1，使用CAS。
+    }
+    public static void main(String[] args) {
+        for (int i = 1; i <= 20; i++) {
+            new Thread(() -> {
+                for (int j = 1; j <= 1000; j++) {
+                    add();
+                }
+            }).start();
+        }
+
+        // main,gc
+        while (Thread.activeCount() > 2) {
+            Thread.yield();
+        }
+
+        System.out.println(Thread.currentThread().getName() + " " + num);
+    }
+}
+```
+
+CAS，Unsafe 这些类的底层直接和操作系统挂钩。
+
+> 3、禁止指令重排
+
+什么是指令重排：你写的程序 ，**计算机并不是按照你写的那样去执行的。**
+
+源代码  =》 编译器优化的指令重排 =》 指令并行也可能会重排 =》内存系统也会重排 =》执行。
+
+举个简单的例子，比如你写的代码是这样：
+
+```java
+int x = 1;  // 第1行
+int y = 2;  // 第2行
+x = x + 5;  // 第3行
+y = x * x   // 第4行
+```
+
+我们可能期望的执行顺序是：1234
+
+但是实际的执行顺序可能会是：1324 或者 2134
+
+但是处理器在执行指令重排的时候，会考虑数据之间的依赖性。因此不会出现 4123 这种顺序。
+
+既然你这么了解volatile，那你能说一下 volatile 内存屏障，在哪个地方使用的最多？ =》 单例模式。
+
+使用了volatile修饰符后，就会在变量的前面和后面都加上内存屏障。
+
+### 18、彻底玩转单例模式
+
+为什么枚举可以避免单例被破坏？
+
+搞懂单例模式、搞懂枚举。
+
+- 饿汉模式
+
+- 懒汉模式
+
+  双重检测锁模式的懒汉式单例，简称DCL懒汉式。=》因指令重排可能存在问题，因此加上 volatile修饰。
+  
+
+
 
