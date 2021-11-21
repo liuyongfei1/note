@@ -1651,3 +1651,55 @@ public T newInstance(Object ... initargs)
 **因此，可以利用枚举类来防止通过反射来破坏单例。**
 
 ### 19、深入理解CAS
+
+AtomicInteger类：
+
+```java
+public class AtomicInteger extends Number implements java.io.Serializable {
+    private static final long serialVersionUID = 6214790243416807050L;
+
+    // setup to use Unsafe.compareAndSwapInt for updates
+    private static final Unsafe unsafe = Unsafe.getUnsafe();
+  
+   /**
+    * Atomically increments by one the current value.
+    *
+    * @return the previous value
+    */
+   public final int getAndIncrement() {
+      return unsafe.getAndAddInt(this, valueOffset, 1);
+   }
+```
+
+Unsafe类：
+
+```java
+public final int getAndAddInt(Object var1, long var2, int var4) {
+        int var5;
+        do {
+            // 获取内存地址中的值
+            var5 = this.getIntVolatile(var1, var2);
+        } while(!this.compareAndSwapInt(var1, var2, var5, var5 + var4));
+
+        return var5;
+    }
+```
+
+
+
+**Java无法操作内存，c++可以操作内存。**
+
+**Java通过native方法，可以去调用c++。**
+
+**这个 Unsafe就相当于是 Java的后门，可以通过这个类去操作内存。**
+
+> CAS
+
+**比较当前工作内存中的值和主内存中的值，如果这个值是期望的，那么执行操作。**
+
+**如果不是期望的，就一直循环。**
+
+这是个内存操作，所以效率很高。
+
+
+
