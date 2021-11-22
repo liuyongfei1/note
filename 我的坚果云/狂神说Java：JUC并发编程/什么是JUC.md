@@ -1943,4 +1943,125 @@ public class ReentrantDemo2 {
 
 - ReentrantLock跟synchronized不一样，ReentrantLock需要手动释放锁，并且加锁次数和释放锁次数要一样，否则会导致死锁。
 
-  
+#### 3、自旋锁
+
+```java
+public static AtomicInteger count = new AtomicInteger(0);
+count.incrementAndGet();
+/**
+     * Atomically increments by one the current value.
+     *
+     * @return the updated value
+     */
+    public final int incrementAndGet() {
+        return unsafe.getAndAddInt(this, valueOffset, 1) + 1;
+    }
+    
+    public final int getAndAddInt(Object var1, long var2, int var4) {
+        int var5;
+        do {
+            var5 = this.getIntVolatile(var1, var2);
+        } while(!this.compareAndSwapInt(var1, var2, var5, var5 + var4));
+
+        return var5;
+    }
+```
+
+<img src="什么是JUC.assets/image-20211122230101289.png" alt="image-20211122230101289" style="zoom:50%;" />
+
+这里就是一个标准自旋锁，它会不断的循环，直到拿到锁为止。
+
+自己写一个自旋锁：
+
+```java
+/**
+ * 手动创建一个自旋锁
+ *
+ * @author Liuyongfei
+ * @date 2021/11/22 23:04
+ */
+public class MySpinLock {
+
+    // 如果泛型是 int，参数不写则默认就是 0
+    // 如果泛型是 Threa，是个引用类型，参数不写则默认就是 null
+    AtomicReference<Thread>  atomicReference = new AtomicReference();
+
+    /**
+     * 加锁
+     */
+    public void myLock() {
+        Thread thread = Thread.currentThread();
+        while (!atomicReference.compareAndSet(null, thread)) {
+
+        }
+        System.out.println(Thread.currentThread().getName() + "=> myLock");
+    }
+
+    /**
+     * 解锁
+     */
+    public void myUnlock() {
+        Thread thread = Thread.currentThread();
+        System.out.println(Thread.currentThread().getName() + "=> myUnlock");
+
+        atomicReference.compareAndSet(thread, null);
+    }
+}
+```
+
+```java
+/**
+ * 自旋锁测试
+ *
+ * @author Liuyongfei
+ * @date 2021/11/22 23:14
+ */
+public class SpinLockTest {
+
+    public static void main(String[] args) throws InterruptedException {
+        MySpinLock lock = new MySpinLock();
+
+        new Thread(() -> {
+            lock.myLock();
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.myUnlock();
+            }
+        },"T1").start();
+
+        // 这里的目的是保证T1线程先拿到锁
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            lock.myLock();
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.myUnlock();
+            }
+        },"T2").start();
+    }
+}
+```
+
+输出结果：
+
+```bash
+T1=> myLock
+T1=> myUnlock
+T2=> myLock
+T2=> myUnlock
+```
+
+**结论**
+
+1、T1先拿到锁，然后处理业务，然后释放锁；
+
+2、T2才能拿到锁，然后处理业务，然后释放锁。
+
+3、在T1没有释放锁之前，T2会一直等待。
