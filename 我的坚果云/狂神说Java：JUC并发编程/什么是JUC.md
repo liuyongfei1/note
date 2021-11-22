@@ -1782,4 +1782,97 @@ public class CASDemo2 {
 }
 ```
 
-https://www.bilibili.com/video/BV1B7411L7tE?p=36&spm_id_from=pageDriver
+### 21、对各种锁的理解
+
+#### 1、公平锁和非公平锁
+
+##### 公平锁
+
+非常公平，不能插队，必须先来后到。
+
+##### 非公平锁
+
+非常不公平，可以插队，默认都是非公平锁。
+
+```java
+ /**
+     * Creates an instance of {@code ReentrantLock}.
+     * This is equivalent to using {@code ReentrantLock(false)}.
+     */
+    public ReentrantLock() {
+        sync = new NonfairSync();
+    }
+
+    /**
+     * Creates an instance of {@code ReentrantLock} with the
+     * given fairness policy.
+     *
+     * @param fair {@code true} if this lock should use a fair ordering policy
+     */
+    public ReentrantLock(boolean fair) {
+        sync = fair ? new FairSync() : new NonfairSync();
+    }
+```
+
+#### 2、可重入锁
+
+可重入锁（递归锁），拿到里外面的锁之后，就可以拿到里面的锁，自动获得。
+
+可重入就是说某个线程已经获得某个锁,可以再次获取锁而不会出现死锁。
+
+> 使用synchronized
+
+```java
+/**
+ * 可重入锁-synchronized
+ *
+ * @author Liuyongfei
+ * @date 2021/11/22 22:27
+ */
+public class ReentrantDemo1 {
+
+    public static void main(String[] args) {
+        ReentrantDemo1 demo = new ReentrantDemo1();
+        demo.test();
+    };
+
+    public void test() {
+        new Thread(() -> {
+            synchronized (this) {
+                System.out.println("第一次获得这个锁，这个锁是" + this);
+
+                int index = 1;
+
+                while (true) {
+                    synchronized (this) {
+                        System.out.println("第" + (++index) + "次获得这个锁，这个锁是" + this);
+
+                        if (index == 10) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+        }).start();
+    }
+}
+```
+
+输出结果：
+
+```bash
+第一次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第2次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第3次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第4次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第5次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第6次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第7次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第8次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第9次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+第10次获得这个锁，这个锁是lock.ReentrantDemo1@73130892
+```
+
+> Lock版
+
