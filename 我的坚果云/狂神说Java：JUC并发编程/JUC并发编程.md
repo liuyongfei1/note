@@ -133,7 +133,7 @@ Lock锁是一个接口，它的实现类是：
 - A线程对这个变量进行加1，就会告诉B线程；
 - B线程收到通知就对这个变量进行减1。
 
-> Synchronized版
+> #### Synchronized版
 
 ```java
 /**
@@ -266,6 +266,92 @@ T2=>0
 判断是否等待/ 业务代码 / 通知
 
 ![image-20211117092858925](什么是JUC.assets/image-20211117092858925.png)
+
+> Lock版
+
+通过Lock找到Condition
+
+![image-20211123125933224](JUC并发编程.assets/image-20211123125933224.png)
+
+<img src="JUC并发编程.assets/image-20211123125706526.png" alt="image-20211123125706526" style="zoom:40%;" />
+
+```java
+/**
+ * 这里写业务逻辑，使用 Lock Condition
+ *
+ * 一个执行加操作的方法： 0 -》1
+ * 一个执行减操作的方法： 1 -》0
+ *
+ * 判断是否需要等待
+ *
+ * 业务
+ *
+ * 通知
+ * @author Liuyongfei
+ * @date 2021/11/23 08:57
+ */
+public class MyDataUseLock {
+
+    private int number = 0;
+
+    Lock lock  = new ReentrantLock();
+    Condition condition = lock.newCondition();
+
+
+    /**
+     * 执行加操作
+     */
+    public void increment() throws InterruptedException {
+
+        lock.lock();
+
+        try {
+            if (number != 0) {
+                // 等待
+                condition.await();
+            }
+
+            number++;
+
+            System.out.println(Thread.currentThread().getName() + "=>" + number);
+
+            // 通知其它线程，我+1完毕了
+            condition.signalAll();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * 执行减操作
+     */
+    public void decrement() throws InterruptedException {
+
+       lock.lock();
+        try {
+            if (number == 0) {
+                // 等待
+                condition.await();
+            }
+
+            number--;
+
+            System.out.println(Thread.currentThread().getName() + "=>" + number);
+
+            // 通知其它线程，我-1完毕了
+            condition.signalAll();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=7&spm_id_from=pageDriver
 
