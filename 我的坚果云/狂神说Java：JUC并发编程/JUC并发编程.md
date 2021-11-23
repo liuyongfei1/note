@@ -124,6 +124,143 @@ Lock锁是一个接口，它的实现类是：
 
 ### 4、生产者和消费者
 
+`面试时的几个高频问题：单例模式、排序算法、生产者和消费者、死锁。`
+
+线程之间的通信问题，比如涉及到生产者和消费者。
+
+两个线程操作同一个变量，一个线程加，一个线程减。
+
+- A线程对这个变量进行加1，就会告诉B线程；
+- B线程收到通知就对这个变量进行减1。
+
+> Synchronized版
+
+```java
+/**
+ * 使用两个线程来进行测试 线程之间的通信
+ *
+ * @author Liuyongfei
+ * @date 2021/11/23 09:09
+ */
+public class Demo1 {
+
+    public static void main(String[] args) {
+        MyData myData = new MyData();
+
+        // 这个线程会调用10次 加的方法
+        new Thread(() -> {
+            for (int i = 1; i <= 10 ; i++) {
+                try {
+                    myData.increment();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }," T1").start();
+
+
+        new Thread(() -> {
+            for (int i = 1; i <= 10 ; i++) {
+                try {
+                    myData.decrement();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        },"T2").start();
+    }
+}
+
+/**
+ * 这里写业务逻辑，
+ *
+ * 一个执行加操作的方法： 0 -》1
+ * 一个执行减操作的方法： 1 -》0
+ *
+ * 判断是否需要等待
+ *
+ * 业务
+ *
+ * 通知
+ * @author Liuyongfei
+ * @date 2021/11/23 08:57
+ */
+public class MyData {
+
+    private int number = 0;
+
+
+    /**
+     * 执行加操作
+     */
+    public synchronized void increment() throws InterruptedException {
+
+        if (number != 0) {
+            // 等待
+            this.wait();
+        }
+
+        number++;
+
+        System.out.println(Thread.currentThread().getName() + "=>" + number);
+
+        // 通知其它线程，我+1完毕了
+        this.notifyAll();
+    }
+
+    /**
+     * 执行减操作
+     */
+    public synchronized void decrement() throws InterruptedException {
+
+        if (number == 0) {
+            // 等待
+            this.wait();
+        }
+
+        number--;
+
+        System.out.println(Thread.currentThread().getName() + "=>" + number);
+
+        // 通知其它线程，我-1完毕了
+        this.notifyAll();
+    }
+}
+
+```
+
+输出结果：
+
+```java
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+ T1=>1
+T2=>0
+```
+
+可以看到：
+
+- T1线程执行加1操作后，会发出通知，然后自己处于等待状态；
+- T2线程原本处于等待状态，收到通知后，执行减1操作后，会发出通知；
+- T1线程收到通知后，执行加1操作后，会发出通知；
+- 每个线程循环交替执行10次。
+
 三步曲：
 
 判断是否等待/ 业务代码 / 通知
@@ -139,6 +276,8 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=7&spm_id_from=pageDriver
 https://www.bilibili.com/video/BV1B7411L7tE?p=13&spm_id_from=pageDriver
 
 ### 5、8锁现象
+
+
 
 ### 6、集合类不安全
 
@@ -2131,3 +2270,8 @@ class MyDeadLock implements Runnable{
 
 <img src="什么是JUC.assets/image-20211122235527466.png" alt="image-20211122235527466" style="zoom:50%;" />
 
+
+
+### 小结
+
+https://www.bilibili.com/video/BV1B7411L7tE?p=39
