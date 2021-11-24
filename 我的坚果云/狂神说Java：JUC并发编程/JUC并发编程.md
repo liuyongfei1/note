@@ -1003,6 +1003,95 @@ class Phone8 {
 
 ### 6、集合类不安全
 
+https://www.bilibili.com/video/BV1B7411L7tE?p=11
+
+#### List不安全
+
+ 案例：
+
+```java
+/**
+ * 集合类不安全：
+ *
+ * List 不安全
+ * @author Liuyongfei
+ * @date 2021/11/24 13:21
+ */
+public class ListTest {
+
+    public static void main(String[] args) {
+        // 1.单线程下是安全的，没有问题的
+//        List<String> list = Arrays.asList("1","2","3");
+//        list.forEach(System.out::println);
+
+        // 2.单线程下是安全的，没有问题的
+//        List<String> list = new ArrayList<>();
+//
+//        for (int i = 1; i < 10; i++) {
+//            list.add(UUID.randomUUID().toString().substring(0,5));
+//        }
+//
+//        System.out.println(list);
+
+        // 3. 改为多线程情况下 则会有报错
+        List<String> list = new ArrayList<>();
+
+        for (int i = 1; i <= 20; i++) {
+            new Thread(() -> {
+                list.add(UUID.randomUUID().toString().substring(0,5));
+                System.out.println(list);
+            },String.valueOf(i)).start();
+        }
+    }
+}
+```
+
+报错：
+
+```bash
+[89b5a, 400fd, faca2, a250c, b705c]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd, 0e320, 4121b]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd, 0e320, 4121b, 016aa, 01631]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd, 0e320, 4121b, 016aa, 01631, b9c10, 65679]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf]
+[89b5a, 400fd, faca2, a250c, b705c]
+[89b5a, 400fd, faca2, a250c, b705c]
+[89b5a, 400fd, faca2, a250c, b705c]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd, 0e320, 4121b, 016aa, 01631, b9c10]
+[89b5a, 400fd, faca2, a250c, b705c, 5de36, fdfbf, 8a805, 7151f, 707f3, 35555, f99e2, d0357, 3a1bd, 0e320]
+Exception in thread "4" java.util.ConcurrentModificationException
+	at java.util.ArrayList$Itr.checkForComodification(ArrayList.java:909)
+	at java.util.ArrayList$Itr.next(ArrayList.java:859)
+	at java.util.AbstractCollection.toString(AbstractCollection.java:461)
+	at java.lang.String.valueOf(String.java:2994)
+	at java.io.PrintStream.println(PrintStream.java:821)
+	at unsafe.ListTest.lambda$main$0(ListTest.java:37)
+	at java.lang.Thread.run(Thread.java:748)
+
+Process finished with exit code 0
+```
+
+并发集合下报错：
+
+```java
+java.util.ConcurrentModificationException
+```
+
+`并发下List不安全，报并发修改异常。`
+
+**解决**
+
+
+
 ### 7、Callable
 
 <img src="什么是JUC.assets/image-20211117225155870.png" alt="image-20211117225155870" style="zoom:50%;" />
