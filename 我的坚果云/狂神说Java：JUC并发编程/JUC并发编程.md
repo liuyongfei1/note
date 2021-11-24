@@ -529,6 +529,415 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=13&spm_id_from=pageDriver
 
 ### 5、8锁现象
 
+就是关于锁的8个问题。
+
+`第二个：sendSms方法延迟了4秒，该代码是 先执行 发短信，还是先执行 打电话呢？`
+
+> ```
+> synchronized，锁的对象是方法的调用者。
+> ```
+
+```java
+public class Test1 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone phone = new Phone();
+
+        new Thread(() -> {
+            phone.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone.phone();
+        }).start();
+
+    }
+}
+
+class Phone {
+
+    public synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+}
+```
+
+
+
+执行结果：
+
+```bash
+发短信
+打电话
+```
+
+总结：
+
+`synchronized，锁的对象是方法的调用者。因此两个方法锁的都是同一个对象。=》 则谁先拿到锁谁先执行。`
+
+`第三个：添加一个普通方法，线程B调用普通方法，是先输出发短信，还是先输出hello？`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第二个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 但是B线程调用的是同一个方法，这时是先输出发短信，还是先输出hello呢？
+ *
+ *
+ * 执行结果：
+ * hello
+ * 发短信
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test2 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone2 phone = new Phone2();
+
+        new Thread(() -> {
+            phone.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+//            phone.phone();
+            phone.hello();
+        }).start();
+
+    }
+}
+
+class Phone2 {
+
+    public synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+    public void hello() {
+        System.out.println("hello");
+    }
+}
+```
+
+`第四个：sendSms方法延迟了4秒，有两个对象，分别调用sendSms和phone,先输出发短信，还是打电话呢？`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第三个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 有两个对象，分别调用sendSms和phone,先输出发短信，还是打电话呢？
+ *
+ *
+ * 执行结果：
+ * 打电话
+ * 发短信
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test3 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone3 phone31 = new Phone3();
+        Phone3 phone32 = new Phone3();
+
+        new Thread(() -> {
+            phone31.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone32.phone();
+        }).start();
+
+    }
+}
+
+class Phone3 {
+
+    public synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+    public void hello() {
+        System.out.println("hello");
+    }
+}
+```
+
+`第五个：增加两个静态的同步方法，只有一个对象，先打印 发短信？打电话？`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第五个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 增加两个静态的同步方法，只有一个对象,先输出发短信，还是打电话呢？
+ *
+ *
+ * 执行结果：
+ * 发短信
+ * 打电话
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test4 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone4 phone = new Phone4();
+
+        new Thread(() -> {
+            phone.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone.phone();
+        }).start();
+
+    }
+}
+
+class Phone4 {
+
+    public static synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    public static synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+    public void hello() {
+        System.out.println("hello");
+    }
+}
+```
+
+`第六个：增加两个静态的同步方法，有两个对象，先打印 发短信？打电话？`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第六个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 增加两个静态的同步方法，有两个对象,先输出发短信，还是打电话呢？
+ *
+ *
+ * 执行结果：
+ * 发短信
+ * 打电话
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test4 {
+    public static void main(String[] args) throws InterruptedException {
+        // 两个对象的Class模板只有一个
+        Phone4 phone1 = new Phone4();
+        Phone4 phone2 = new Phone4();
+
+        new Thread(() -> {
+            phone1.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone2.phone();
+        }).start();
+
+    }
+}
+
+class Phone4 {
+
+    public static synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    public static synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+    public void hello() {
+        System.out.println("hello");
+    }
+}
+```
+
+**总结**
+
+static 静态方法，加上 synchronized修饰，则锁的是Phone4这个唯一的 Class （就是那个反射对象）：
+
+```java
+Class<Phone4> phone = Phone4.class;
+```
+
+所以 因为这两个方法都是用的static，所以锁的都是同一个Class。
+
+`第七个：一个静态的同步方法，一个普通的同步方法，只有一个对象分别调用，先输出发短信，还是打电话?`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第七个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 一个静态的同步方法，一个普通的同步方法，只有一个对象,先输出发短信，还是打电话呢？
+ *
+ *
+ * 执行结果：
+ * 打电话
+ * 发短信
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test7 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone7 phone = new Phone7();
+
+        new Thread(() -> {
+            phone.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone.phone();
+        }).start();
+
+    }
+}
+
+class Phone7 {
+
+    /**
+     * 锁的是 这个 Class模板
+     */
+    public static synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    /**
+     * 锁的是方法的调用者
+     */
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+}
+```
+
+**总结**
+
+- 带static的同步方法锁的是那个唯一的Class模板；
+- 不带static的同步方法锁的是方法的调用者；
+- 因此这两个方法锁的不是同一个对象，所以先执行打电话。
+
+
+
+`第8个：一个静态的同步方法，一个普通的同步方法，两个对象调用,先输出发短信，还是打电话呢？`
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第八个问题
+ * sendSms方法延迟了4秒
+ * synchronized，锁的对象是方法的调用者。
+ * 一个静态的同步方法，一个普通的同步方法，两个对象调用,先输出发短信，还是打电话呢？
+ *
+ *
+ * 执行结果：
+ * 打电话
+ * 发短信
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test8 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone8 phone1 = new Phone8();
+        Phone8 phone2 = new Phone8();
+
+        new Thread(() -> {
+            phone1.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone2.phone();
+        }).start();
+
+    }
+}
+
+class Phone8 {
+
+    /**
+     * 锁的是 这个 Class模板
+     */
+    public static synchronized void sendSms() {
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("发短信");
+    }
+
+    /**
+     * 锁的是方法的调用者
+     */
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+
+}
+```
+
 
 
 ### 6、集合类不安全
