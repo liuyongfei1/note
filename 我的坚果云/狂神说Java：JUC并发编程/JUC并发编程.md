@@ -531,13 +531,23 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=13&spm_id_from=pageDriver
 
 就是关于锁的8个问题。
 
-`第二个：sendSms方法延迟了4秒，该代码是 先执行 发短信，还是先执行 打电话呢？`
+`第一个：两个同步方法，同一个调用对象，该代码是 先执行 发短信，还是先执行 打电话呢？`
 
-> ```
 > synchronized，锁的对象是方法的调用者。
-> ```
 
 ```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第一个问题
+ * 该代码是 先执行 发短信，还是先执行 打电话呢？
+ * synchronized，锁的对象是方法的调用者。因此两个方法锁的都是同一个对象。
+ * 则谁先拿到锁谁先执行。
+ *
+ * 执行结果：
+ * 发短信
+ * 打电话
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
 public class Test1 {
     public static void main(String[] args) throws InterruptedException {
         Phone phone = new Phone();
@@ -556,6 +566,56 @@ public class Test1 {
 }
 
 class Phone {
+
+    public synchronized void sendSms() {
+        System.out.println("发短信");
+    }
+
+    public synchronized void phone() {
+        System.out.println("打电话");
+    }
+}
+```
+
+
+
+`第二个：sendSms方法延迟了4秒，该代码是 先执行 发短信，还是先执行 打电话呢？`
+
+> ```
+> synchronized，锁的对象是方法的调用者。
+> ```
+
+```java
+/**
+ * 8锁现象，就是关于锁的8个问题- 第二个问题
+ * sendSms方法延迟了4秒，该代码是 先执行 发短信，还是先执行 打电话呢？
+ * synchronized，锁的对象是方法的调用者。因此两个方法锁的都是同一个对象。
+ * 则谁先拿到锁谁先执行。
+ *
+ * 执行结果：
+ * 发短信
+ * 打电话
+ * @author Liuyongfei
+ * @date 2021/11/23 23:18
+ */
+public class Test2 {
+    public static void main(String[] args) throws InterruptedException {
+        Phone2 phone = new Phone2();
+
+        new Thread(() -> {
+            phone.sendSms();
+        }).start();
+
+        TimeUnit.SECONDS.sleep(1);
+
+        new Thread(() -> {
+            phone.phone();
+        }).start();
+
+    }
+}
+
+class Phone2 {
 
     public synchronized void sendSms() {
         try {
@@ -589,7 +649,7 @@ class Phone {
 
 ```java
 /**
- * 8锁现象，就是关于锁的8个问题- 第二个问题
+ * 8锁现象，就是关于锁的8个问题- 第三个问题
  * sendSms方法延迟了4秒
  * synchronized，锁的对象是方法的调用者。
  * 但是B线程调用的是同一个方法，这时是先输出发短信，还是先输出hello呢？
@@ -601,9 +661,9 @@ class Phone {
  * @author Liuyongfei
  * @date 2021/11/23 23:18
  */
-public class Test2 {
+public class Test3 {
     public static void main(String[] args) throws InterruptedException {
-        Phone2 phone = new Phone2();
+        Phone3 phone = new Phone3();
 
         new Thread(() -> {
             phone.sendSms();
@@ -619,7 +679,7 @@ public class Test2 {
     }
 }
 
-class Phone2 {
+class Phone3 {
 
     public synchronized void sendSms() {
         try {
@@ -644,7 +704,7 @@ class Phone2 {
 
 ```java
 /**
- * 8锁现象，就是关于锁的8个问题- 第三个问题
+ * 8锁现象，就是关于锁的8个问题- 第四个问题
  * sendSms方法延迟了4秒
  * synchronized，锁的对象是方法的调用者。
  * 有两个对象，分别调用sendSms和phone,先输出发短信，还是打电话呢？
@@ -656,25 +716,25 @@ class Phone2 {
  * @author Liuyongfei
  * @date 2021/11/23 23:18
  */
-public class Test3 {
+public class Test4 {
     public static void main(String[] args) throws InterruptedException {
-        Phone3 phone31 = new Phone3();
-        Phone3 phone32 = new Phone3();
+        Phone4 phone1 = new Phone4();
+        Phone4 phone2 = new Phone4();
 
         new Thread(() -> {
-            phone31.sendSms();
+            phone1.sendSms();
         }).start();
 
         TimeUnit.SECONDS.sleep(1);
 
         new Thread(() -> {
-            phone32.phone();
+            phone2.phone();
         }).start();
 
     }
 }
 
-class Phone3 {
+class Phone4 {
 
     public synchronized void sendSms() {
         try {
@@ -711,9 +771,9 @@ class Phone3 {
  * @author Liuyongfei
  * @date 2021/11/23 23:18
  */
-public class Test4 {
+public class Test5 {
     public static void main(String[] args) throws InterruptedException {
-        Phone4 phone = new Phone4();
+        Phone5 phone = new Phone5();
 
         new Thread(() -> {
             phone.sendSms();
@@ -728,7 +788,7 @@ public class Test4 {
     }
 }
 
-class Phone4 {
+class Phone5 {
 
     public static synchronized void sendSms() {
         try {
@@ -756,7 +816,7 @@ class Phone4 {
  * 8锁现象，就是关于锁的8个问题- 第六个问题
  * sendSms方法延迟了4秒
  * synchronized，锁的对象是方法的调用者。
- * 增加两个静态的同步方法，有两个对象,先输出发短信，还是打电话呢？
+ * 增加两个静态的同步方法，只有一个对象,先输出发短信，还是打电话呢？
  *
  *
  * 执行结果：
@@ -765,11 +825,12 @@ class Phone4 {
  * @author Liuyongfei
  * @date 2021/11/23 23:18
  */
-public class Test4 {
+public class Test6 {
     public static void main(String[] args) throws InterruptedException {
+
         // 两个对象的Class模板只有一个
-        Phone4 phone1 = new Phone4();
-        Phone4 phone2 = new Phone4();
+        Phone6 phone1 = new Phone6();
+        Phone6 phone2 = new Phone6();
 
         new Thread(() -> {
             phone1.sendSms();
@@ -784,7 +845,7 @@ public class Test4 {
     }
 }
 
-class Phone4 {
+class Phone6 {
 
     public static synchronized void sendSms() {
         try {
