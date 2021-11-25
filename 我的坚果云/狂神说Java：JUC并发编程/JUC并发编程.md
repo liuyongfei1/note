@@ -1252,15 +1252,23 @@ public class MapTest {
 
 ### 7、Callable
 
+<img src="JUC并发编程.assets/image-20211125091301601.png" alt="image-20211125091301601" style="zoom:50%;" />
+
+Callable的特点：
+
+- 可以有返回值；
+- 可以抛出异常；
+- 方法不同，run() -> call()
+
 <img src="什么是JUC.assets/image-20211117225155870.png" alt="image-20211117225155870" style="zoom:50%;" />
 
-
+Runnable -> FetureTask
 
 <img src="什么是JUC.assets/image-20211117225346380.png" alt="image-20211117225346380" style="zoom:50%;" />
 
 
 
-FutureTask是Runnable的实现类。
+FutureTask是Runnable的实现类，又可以调Callable。
 
 >  怎么使用Callable呢？
 
@@ -1279,6 +1287,16 @@ class MyThread implements Runnable {
 new Thread(new MyThread()).start(); 就可以启动一个线程。
 
 如果使用Callable，该怎么启动一个线程呢？
+
+```java
+new Thread(new Runnable()).start()
+
+new Thread(new FutureTask<V>()).start()
+
+new Thread(new FutureTask<V>(Callable)).start()
+```
+
+
 
 ```java
 class MyThread implements Callable<String> {
@@ -1657,7 +1675,138 @@ List、Set的祖宗类都是 Collection。
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=20&spm_id_from=pageDriver
 
+| 方式         | 抛出异常  | 有返回值，不抛出异常 | 阻塞等待 | 超时等待  |
+| ------------ | --------- | -------------------- | -------- | --------- |
+| 添加         | add()     | offer()              | put()    | offer(,,) |
+| 删除         | remove()  | poll()               | take()   | poll(,,)  |
+| 检测队首元素 | element() | peak()               |          |           |
 
+##### 第一组
+
+```java
+/**
+ * 阻塞队列
+ * add()、remove()、element() 会抛出异常
+ * @author Liuyongfei
+ * @date 2021/11/25 13:05
+ */
+public class Test1 {
+
+    public static void main(String[] args) {
+        ArrayBlockingQueue queue =  new ArrayBlockingQueue<>(3);
+
+        // 第一组API，会抛出异常： add,remove,element
+        System.out.println(queue.add("a"));
+        System.out.println(queue.add("b"));
+        System.out.println(queue.add("c"));
+//        System.out.println(queue.add("d"));  // Exception in thread "main" java.lang.IllegalStateException: Queue full
+
+        queue.remove();
+        queue.remove();
+        queue.remove();
+//        queue.remove(); // Exception in thread "main" java.util.NoSuchElementException
+
+//        System.out.println(queue.element()); // Exception in thread "main" java.util.NoSuchElementException
+    }
+}
+```
+
+##### 第二组
+
+```java
+/**
+ * 阻塞队列
+ *
+ * 第二组API：
+ * offer()、poll()、peak()
+ * @author Liuyongfei
+ * @date 2021/11/25 13:16
+ */
+public class Test2 {
+    public static void main(String[] args) {
+        BlockingQueue queue = new ArrayBlockingQueue<>(3);
+
+        System.out.println(queue.offer("a")); // true
+        System.out.println(queue.offer("b")); // true
+        System.out.println(queue.offer("c")); // true
+//        System.out.println(queue.offer("d"));  // 直接返回false，不抛出异常
+
+        System.out.println(queue.poll()); // a
+        System.out.println(queue.poll()); // b
+        System.out.println(queue.poll()); // c
+//        System.out.println(queue.poll()); // 返回null，不抛出异常
+//
+        System.out.println(queue.peek()); // null
+    }
+}
+```
+
+##### 第三组
+
+```java
+/**
+ * 阻塞队列
+ *
+ * 第三组API：
+ * 阻塞、等待
+ * put()、take()
+ * @author Liuyongfei
+ * @date 2021/11/25 13:25
+ */
+public class Test3 {
+
+    public static void main(String[] args) throws InterruptedException {
+        ArrayBlockingQueue queue = new ArrayBlockingQueue<String>(3);
+
+        queue.put("a");
+        queue.put("b");
+        queue.put("c");
+//        queue.put("d"); // 队列没有位置了，因此会一直阻塞，进程不会退出
+
+        System.out.println(queue.take());
+        System.out.println(queue.take());
+        System.out.println(queue.take());
+        System.out.println(queue.take()); // 队列没有元素了，因此会一直阻塞，进程不会退出
+
+    }
+}
+```
+
+##### 第四组
+
+```java
+/**
+ * 阻塞队列
+ *
+ * 第二组API：等待一定时间后，退出，不抛出异常
+ * offer()、poll()
+ * 第二个参数传超时时间
+ *
+ *
+ * @author Liuyongfei
+ * @date 2021/11/25 13:16
+ */
+public class Test4 {
+    public static void main(String[] args) throws InterruptedException {
+        BlockingQueue queue = new ArrayBlockingQueue<>(3);
+
+        System.out.println(queue.offer("a")); // true
+        System.out.println(queue.offer("b")); // true
+        System.out.println(queue.offer("c")); // true
+//        System.out.println(queue.offer("d",2, TimeUnit.SECONDS));  // 等待2秒后，返回false，退出
+
+        System.out.println(queue.poll()); // a
+        System.out.println(queue.poll()); // b
+        System.out.println(queue.poll()); // c
+        System.out.println(queue.poll(2, TimeUnit.SECONDS)); // 等待2秒后，返回null，退出。
+//
+    }
+}
+```
+
+
+
+asda
 
 > SynchronousQueue同步队列
 
