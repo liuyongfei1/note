@@ -1806,8 +1806,6 @@ public class Test4 {
 
 
 
-asda
-
 > SynchronousQueue同步队列
 
 和其它的BlockingQueue是不一样的。没有容量，进去一个元素，必须等待取出来之后，才能往里边再放一个元素。
