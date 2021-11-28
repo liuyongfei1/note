@@ -54,4 +54,125 @@
 
 #### Mybatis缓存
 
+#### 一级缓存
+
+一级缓存默认是开启的，只在一次SqlSession中有效。也就是在拿到连接到关闭连接这个中间有效。
+
+demo：
+
+```java
+/**
+ * 用户DAO类的单元测试类
+ * 同一个会话内，同一个查询，查询多次，会走缓存
+ * @author Liuyongfei
+ * @date 2021/11/27 17:49
+ */
+public class Test2UserMapper {
+
+    @Test
+    public void getUserListTest() {
+
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        User user = mapper.getUserById(1);
+        User user2 = mapper.getUserById(1);
+        System.out.println(user);
+        System.out.println(user == user2); // true
+        sqlSession.close();
+
+    }
+}
+```
+
+输出结果：
+
+```bash
+[DEBUG] 2021-11-28 21:08:44 org.apache.ibatis.cache.decorators.LoggingCache.getObject(LoggingCache.java:60): Cache Hit Ratio [com.fullstackboy.mybatis.dao.UserMapper]: 0.0
+[DEBUG] 2021-11-28 21:08:44 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): ==>  Preparing: select * from mybatis.user where id = ? 
+[DEBUG] 2021-11-28 21:08:44 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): ==> Parameters: 1(Integer)
+[DEBUG] 2021-11-28 21:08:44 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): <==      Total: 1
+[DEBUG] 2021-11-28 21:08:44 org.apache.ibatis.cache.decorators.LoggingCache.getObject(LoggingCache.java:60): Cache Hit Ratio [com.fullstackboy.mybatis.dao.UserMapper]: 0.0
+User(id=1, name=张三, pwd=123)
+true
+```
+
+**在同一次会话中，同一个查询，查询多次，走一级缓存。**
+
+#### 二级缓存
+
+- 一级缓存作用域太低了，所以诞生了二级缓存；
+
+- 基于namespace级别的缓存，一个名称空间对应一个二级缓存；
+
+- 工作机制
+
+  - 一个会话查询一条数据，这个数据就会被放在当前会话的一级缓存中；
+  - 如果当前会话关闭了，这个会话对应的一级缓存就没了；
+  - 但是我们想要的是会话关闭了一级缓存中的数据被保存到二级缓存中；
+  - 新的会话来查询信息时，就可以从二级缓存中获取内容；
+  - 不同的mapper查询出的数据会缓存在对应的缓存（map）中。
+
+  注意：前提是 namespace一样，使用的是同一个Mapper。
+
+要启动二级缓存（默认也是开启的），只需要在你的SQL映射文件中添加一行：
+
+```xml
+<!--开启二级缓存-->
+    <cache
+            eviction="FIFO"
+            flushInterval="60000"
+            size="512"
+            readOnly="true"/>
+```
+
+Demo：
+
+```java
+/**
+ * 用户DAO类的单元测试类
+ * 当前会话结束，一级缓存没了，这时数据保存到了二级缓存中去，新来的会话查询这个数据时，从二级缓存里取。
+ * 前提：使用的是同一个Mapper。
+ * @author Liuyongfei
+ * @date 2021/11/27 17:49
+ */
+public class Test3UserMapper {
+
+    @Test
+    public void getUserListTest() {
+
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        SqlSession sqlSession2 = MybatisUtil.getSqlSession();
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        User user = mapper.getUserById(1);
+        System.out.println(user);
+        sqlSession.close();
+
+        UserMapper mapper2 = sqlSession2.getMapper(UserMapper.class);
+        User user2 = mapper2.getUserById(1);
+        System.out.println(user2);
+        System.out.println(user == user2); // true
+        sqlSession2.close();
+    }
+}
+```
+
+
+
+输出结果：
+
+```bash
+[DEBUG] 2021-11-28 21:03:25 org.apache.ibatis.cache.decorators.LoggingCache.getObject(LoggingCache.java:60): Cache Hit Ratio [com.fullstackboy.mybatis.dao.UserMapper]: 0.0
+[DEBUG] 2021-11-28 21:03:26 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): ==>  Preparing: select * from mybatis.user where id = ? 
+[DEBUG] 2021-11-28 21:03:26 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): ==> Parameters: 1(Integer)
+[DEBUG] 2021-11-28 21:03:26 org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:143): <==      Total: 1
+User(id=1, name=张三, pwd=123)
+[DEBUG] 2021-11-28 21:03:26 org.apache.ibatis.cache.decorators.LoggingCache.getObject(LoggingCache.java:60): Cache Hit Ratio [com.fullstackboy.mybatis.dao.UserMapper]: 0.5
+User(id=1, name=张三, pwd=123)
+true
+```
+
+**可以看到，前后两次会话，sql语句只查询了一次，且两次的查询结果对象是一样的。**
+
+
+
 https://www.bilibili.com/video/BV1NE411Q7Nx?p=27&spm_id_from=pageDriver
