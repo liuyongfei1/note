@@ -175,4 +175,8 @@ true
 
 
 
+#### Mybatis缓存原理
+
+<img src="Mybatis简介.assets/Mybatis缓存原理.png" alt="Mybatis缓存原理" style="zoom:80%;" />
+
 https://www.bilibili.com/video/BV1NE411Q7Nx?p=27&spm_id_from=pageDriver
