@@ -1,3 +1,13 @@
+Spring就是一个轻量级的控制反转（IOC）和面相切面编程（AOP）的框架。
+
+### SSM
+
+早期的程序员需要学ssh：Struct2 + Spring + Hibernate
+
+现在比较火的是ssm：Spring MVC + Spring + Mybatis。
+
+
+
 #### IOC理论推导
 
 - Hello对象是谁创建的？
@@ -21,5 +31,24 @@ IOC是一种编程思想，由主动的编程变成被动的接收。
 
 所谓的IOC，一句话搞定：对象由Spring来创建，管理，装配。
 
-https://www.bilibili.com/video/BV1WE411d7Dv/?p=3&spm_id_from=pageDriver
+https://www.bilibili.com/video/BV1WE411d7Dv/?p=6&spm_id_from=pageDriver
 
+
+
+#### 配置声明式事务
+
+<img src="Spring.assets/image-20211129223828646.png" alt="image-20211129223828646" style="zoom:50%;" />
+
+### Spring-Mybatis整合
+
+#### 方式一
+
+在之前使用Mybatis的时候，只需要一个 UserMapper接口，一个UserMapper.xml。
+
+但与Spring整合后，需要多一个UserMapperImpl实现类。
+
+为什么多一个UserMapperImpl实现类呢？=》
+
+**因为Spring要接管创建对象的工作，但需要依赖对象的set方法，因此我们需要添加一个实现类，手动加入这个set方法。**
+
+https://www.bilibili.com/video/BV1WE411d7Dv?p=24
