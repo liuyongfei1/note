@@ -35,10 +35,6 @@ https://www.bilibili.com/video/BV1WE411d7Dv/?p=6&spm_id_from=pageDriver
 
 
 
-#### 配置声明式事务
-
-<img src="Spring.assets/image-20211129223828646.png" alt="image-20211129223828646" style="zoom:50%;" />
-
 ### Spring-Mybatis整合
 
 #### 方式一
@@ -49,6 +45,24 @@ https://www.bilibili.com/video/BV1WE411d7Dv/?p=6&spm_id_from=pageDriver
 
 为什么多一个UserMapperImpl实现类呢？=》
 
-**因为Spring要接管创建对象的工作，但需要依赖对象的set方法，因此我们需要添加一个实现类，手动加入这个set方法。**
+**因为Spring要接管创建对象的工作，但需要依赖对象的set方法。**
+
+**因此我们需要添加一个实现类，手动加入这个set方法。**
+
+#### 方式二
+
+使用SqlSessionDaoSupport。例子参考：com.fullstackboy.springdemo.transaction
+
+
+
+Spring事务管理
 
 https://www.bilibili.com/video/BV1WE411d7Dv?p=24
+
+#### 配置声明式事务
+
+<img src="Spring.assets/image-20211129223828646.png" alt="image-20211129223828646" style="zoom:50%;" />
+
+具体代码见：blog-demo/springdemo/transaction。
+
+### 
