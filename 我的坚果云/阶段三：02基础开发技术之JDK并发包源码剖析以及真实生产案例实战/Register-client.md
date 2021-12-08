@@ -12,7 +12,7 @@ main线程里开启了一个线程，如果对这个线程启用了join方法，
 
 ##### interrupt()方法
 
-- interrupt()方法打断一个线程，其实就是修改线程里的一个interrupt标志位，打断以后，interrupt的标志位就变为true，这是可以在线程内部，根据这个标志位isInterrupted，去判断要不要继续执行。
+- interrupt()方法打断一个线程，其实就是修改线程里的一个interrupt标志位，打断以后，interrupt的标志位就变为true，这时可以在线程内部，根据这个标志位isInterrupted，去判断要不要继续执行。
 - 并不是说直接interrupt一下就不让线程执行了。
 
 如果系统要尽快停止，那么就应该应用interrupt打断各个工作线程的休眠，让他们判断是否运行标志位为false，就立刻退出。

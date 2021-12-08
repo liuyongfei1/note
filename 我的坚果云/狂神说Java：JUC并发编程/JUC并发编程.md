@@ -1252,6 +1252,15 @@ public class MapTest {
 
 ### 7、Callable
 
+```txt
+* 创建线程的三种方式：
+* 1、继承Thread类，重写run方法
+* 2、实现Runnable接口，重写run方法
+* 3、实现Callable接口，重写call方法
+```
+
+Callable接口实际上属于Executor框架中的功能类，Callable接口与Runnable接口的功能相似，但提供了比Runnable接口更强大的功能。
+
 <img src="JUC并发编程.assets/image-20211125091301601.png" alt="image-20211125091301601" style="zoom:50%;" />
 
 Callable的特点：
