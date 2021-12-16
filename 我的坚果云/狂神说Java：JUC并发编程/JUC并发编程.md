@@ -1,6 +1,6 @@
 ### 1、什么是JUC
 
-java并发编程时用到的这几个包：
+java并发编程时常常用到的这几个包：
 
 <img src="Untitled.assets/image-20211116232142444.png" alt="image-20211116232142444" style="zoom:50%;" />
 
