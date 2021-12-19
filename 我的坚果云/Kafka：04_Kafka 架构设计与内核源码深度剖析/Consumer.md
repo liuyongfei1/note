@@ -88,3 +88,6 @@ private final AutoCommitTask autoCommitTask;
 
 就是提交给coordinator所在机器。
 
+### 实际场景
+
+在移山系统的-实时服务功能里，有很多地方都用到了Kafka，还是数据库变更订阅服务（perceptor）里，也是client client，去消费kafka里的数据，并将数据解析，存入hbase或mysql。 
