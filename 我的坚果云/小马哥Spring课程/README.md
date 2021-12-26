@@ -18,7 +18,7 @@ spring针对这种情况，它自己用了一套新型框架，就是这个sprin
 
 #### 课程用的Spring版本
 
-spring5.2.2 relaese版本
+spring5.2.2 release版本
 
 ### 12.面试题
 
