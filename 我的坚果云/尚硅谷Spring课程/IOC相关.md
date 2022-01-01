@@ -117,10 +117,10 @@ public class Employee {
 ##### 自动装配
 
 ```xml
-<!--    实现自动装配，通过autowire的byName或byType属性-->
-    <bean id="employee" class="com.fullstackboy.springdemo.ioc.bean.Employee" autowire="byName">
+<!-- 实现自动装配，通过autowire的byName或byType属性-->
+<bean id="employee" class="com.fullstackboy.springdemo.ioc.bean.Employee" autowire="byName">
     </bean>
-    <bean id="dept" class="com.fullstackboy.springdemo.ioc.bean.Department"></bean>
+<bean id="dept" class="com.fullstackboy.springdemo.ioc.bean.Department"></bean>
 ```
 
 实际开发中，基于xml方式来实现自动装配 是比较少的，比较经常的做法还是使用 注解的方式。
