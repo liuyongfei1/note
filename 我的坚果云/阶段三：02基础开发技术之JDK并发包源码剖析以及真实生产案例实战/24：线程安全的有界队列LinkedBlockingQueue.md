@@ -296,7 +296,7 @@ take掉一个元素后，队列不满了，是如何唤醒线程的？
 
 ### size
 
-size直接通过CAS+ volatile，拿到的基本是比较准备的一个值。
+size直接通过CAS+ volatile，拿到的基本是比较准确的一个值。
 
 #### iterator
 
