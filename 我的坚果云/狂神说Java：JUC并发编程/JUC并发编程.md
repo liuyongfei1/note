@@ -35,8 +35,6 @@ System.out.println(Runtime.getRuntime().availableProcessors());
 
 
 
-
-
 >  线程Thread有几个状态
 
 ```java
