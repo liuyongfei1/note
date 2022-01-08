@@ -370,7 +370,7 @@ public static LogFactory getFactory() throws LogConfigurationException {
    ---org.apache.commons.logging.impl.NoOpLog          common-logging 自带日志实现类。它实现了 Log 接口。 其输出日志的方法中不进行任何操作。
    
 
-#### spring5日志新特性详解
+
 
 #### spring4的日志体系
 
@@ -585,7 +585,15 @@ log4j-over-slf4j和log4j不能同时出现，两个jar包都有org.apache.log4j.
 
 <img src="1.assets/image-20220108120718350.png" alt="image-20220108120718350" style="zoom:50%;" />
 
+#### spring5日志新特性详解
 
+<img src="1.assets/image-20220108173935414.png" alt="image-20220108173935414" style="zoom:50%;" />
+
+spring5使用的日志是spring-jcl。
+
+<img src="1.assets/image-20220108174410732.png" alt="image-20220108174410732" style="zoom:50%;" />
+
+可见spring的作者是比较偏爱log4j2。
 
 #### SpringBoot的日志体系
 
