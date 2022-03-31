@@ -86,7 +86,7 @@ Spring有两种类型的bean：一种是普通的bean（我们自己创建的bea
 
 <img src="README.assets/image-20211101233606672.png" alt="image-20211101233606672" style="zoom:50%;" />
 
-demo代码详细见：com.fullstackboy.springdemo.ioc的testBeanPeriod()测试。
+demo代码详细见：com.fullstackboy.springdemo.ioc的Test1#testBeanPeriod()测试。
 
 课程：https://www.bilibili.com/video/BV1Vf4y127N5?p=18&spm_id_from=pageDriver
 

@@ -4,6 +4,12 @@ Dubbo 一篇文章就够了：从入门到实战
 
 https://segmentfault.com/a/1190000019896723
 
+`关于 Dubbo的相关面试题`：
+
+https://www.cnblogs.com/h-c-g/p/11209756.html
+
+https://zhuanlan.zhihu.com/p/264935586
+
 在互联网的发展过程中，在以前，我们只需要一个服务器，将程序全部打包好就可以。但是，随着流量的增大，常规的垂直应用架构就无法应付，所以，架构就发生了演变。
 
 1. 单一应用架构；
@@ -49,3 +55,32 @@ https://segmentfault.com/a/1190000019896723
 3. 启动后就可以通过netty来监听端口号并接收消息；
 4. 接收到消息后再调用相应的DubboHandler，解析消息；
 5. 最终找到需要的Service，再通过反射来invoker。
+
+------------------------------------------------------------------
+
+### 关于Dubbo的SPI机制
+
+#### 先了解JAVA的SPI机制
+
+demo可以看：/Users/lyf/Workspace/www/blog-demo/test-demo/src/main/java/com/fullstackboy/spi/Test.java
+
+#### 想一下 Java SPI 哪里不好
+
+相信大家一眼就能看出来，Java SPI在查找扩展实现类的时候遍历SPI的配置文件，并且将实现类全部实例化。假设一个实现类实例化过程比较消耗资源且耗时，但是你的代码里边又用不上它，这就产生了资源的浪费。
+
+所以说Java SPI无法做到按需加载实现类。
+
+#### Dubbo SPI
+
+因此Dubbo就自己实现了一个SPI，让我们想一下按需加载的话首先你得给个名字，**通过名字去文件里面找对应的实现类全限定名**，然后加载实例化即可。
+
+Dubbo 就是这样设计的，配置文件里边存放的是键值对，截一个 Cluster 的配置：
+
+<img src="README.assets/image-20220330102122929.png" alt="image-20220330102122929" style="zoom:50%;" />
+
+ 
+
+#### Dubbo SPI简单示例
+
+可以看这篇文章：https://blog.csdn.net/qq_35190492/article/details/108256452
+
