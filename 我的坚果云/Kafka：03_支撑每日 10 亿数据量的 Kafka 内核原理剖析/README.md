@@ -4,7 +4,7 @@
 
 比如实时计算。storm -> spark streaming -> flink
 
-是一个数据处理的通道，这里无论你用什么技术来做实时计算，大都是先从kafka里消费出数据，处理，接着再把数据写会kafka里。
+是一个数据处理的通道，这里无论你用什么技术来做实时计算，大都是先从kafka里消费出数据，处理，接着再把数据写回kafka里。
 
 **每秒钟会涌入多少数据，需要支撑多大的吞吐量，包括每天有多少数据需要落地在磁盘来存储，集群需要存储多大的数据量。**
 
@@ -35,11 +35,19 @@ kafka这个实战课程分为哪几个环节的步骤去讲：
 
 ### Kafka高吞吐低延迟是怎么做到的
 
-<img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝).png)](../../../2021年/儒猿/自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)
+<img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />Kafka低延迟高吞吐原理分析(非零拷贝)
 
-<img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝).png)](../../../2021年/儒猿/自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝).png)](../../../2021年/儒猿/自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
+![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝)-8728987.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)
 
-![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝).png)](../../../2021年/儒猿/自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
+<img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />
+
+
+
+Kafka低延迟高吞吐原理分析(零拷贝)
+
+![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝)-8729065.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
+
+
 
 ### Kafka的底层数据结构：日志文件与offset
 
