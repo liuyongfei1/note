@@ -36,10 +36,12 @@ TCP的连接建立和关闭，都是通过请求-响应的模式完成。
 
 #### TCP三次握手的流程
 
-- 第一次握手：主机A发送位码SYN = 1，随机产生seq number = 1234567 的数据包到服务器，主机B由 SYN = 1，知道是要建立连接；
+- 服务端启动，并监听等待，处于 LISTEN 状态；
 
-- 第二次握手：主机B收到请求后要确认联机信息，向A发送 ack number = （主机A的seq number +1），SYN = 1，ACK = 1 ，随机产生的 seq number = 7654321的数据包；
-- 第三次握手：主机A收到请求后，检查ack number是否正确（是否是上一次发送的seq number + 1），以及位码 ACK 是否为 1，若正确，则主机A会再次发送 ack number = （主机B的 seq number）+ 1，SYN =1，ACK = 1，随机产生的 seq number =9894532 的数据包，当主机B收到请求后确认 ack number 与 ACK 无误后，则连接建立成功。
+- 第一次握手：主机A发送位码SYN = 1，随机产生seq number = 1234567 的数据包到服务器，主机A处于SYN_SEND状态；主机B由 SYN = 1，知道是要建立连接；
+
+- 第二次握手：主机B收到请求后要确认联机信息，向A发送 ack number = （主机A的seq number +1），SYN = 1，ACK = 1 ，随机产生的 seq number = 7654321的数据包，主机B 处于 SYN_RCVD 状态；
+- 第三次握手：主机A收到请求后，检查ack number是否正确（是否是上一次发送的seq number + 1），以及位码 ACK 是否为 1，若正确，则主机A会再次发送 ack number = （主机B的 seq number）+ 1，SYN =1，ACK = 1，随机产生的 seq number =9894532 的数据包，主机A处于 ESTABLISHED 状态，客户端接收能力正常，当主机B收到请求后确认 ack number 与 ACK 无误后，则连接建立成功。
 
 #### 建立TCP连接到底是什么意思呢？
 
@@ -49,7 +51,7 @@ TCP的连接建立和关闭，都是通过请求-响应的模式完成。
 
 #### Socket网络编程跟TCP/IP协议的关系是什么
 
-socket就是java的网络编程的一个包，就是基于java网络编程里的scoket的概念来进行编程。
+socket就是java的网络编程的一个包，就是基于java网络编程里的socket的概念来进行编程。
 
 基于socket编程进行连接，实际就是基于tcp的三次握手进行连接。
 

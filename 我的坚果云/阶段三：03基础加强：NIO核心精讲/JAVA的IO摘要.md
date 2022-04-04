@@ -1,5 +1,7 @@
 ### JAVA IO中常用的类
 
+详细案例见：/Users/lyf/Workspace/www/blog-demo/test-demo/src/main/java/com/fullstackboy/io
+
 | 类               | 说明           |
 | ---------------- | -------------- |
 | File             | 文件类         |
