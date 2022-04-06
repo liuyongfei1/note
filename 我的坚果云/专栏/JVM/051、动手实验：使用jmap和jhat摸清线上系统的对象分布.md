@@ -14,6 +14,10 @@
 
 ```bash
 jmap -histo pid
+
+或者
+
+jmap -histo 74469 | more 
 ```
 
 ### 4、使用jmp生成堆内存快照
@@ -34,5 +38,35 @@ jmap -histo pid
 jhat -port 7000 dump.hprof
 ```
 
+![image-20220406154930555](051、动手实验：使用jmap和jhat摸清线上系统的对象分布.assets/image-20220406154930555.png)
 
+
+
+#### Mat
+
+Memory Analyzer tool，是一种快速的，功能丰富的 Java 堆分析工具，能帮你找到内存泄露和减少内存消耗。
+
+也可以使用 Mat 工具 （需要自己安装）：
+
+启动 Mat，打开 dump.hprof。
+
+<img src="051、动手实验：使用jmap和jhat摸清线上系统的对象分布.assets/image-20220406155850911.png" alt="image-20220406155850911" style="zoom:70%;" />
+
+##### Histogram
+
+列出每个类所对应的对象个数，以及所占用的内存大小。
+
+##### Dominator Tree
+
+`以占用总内存的百分比的方式来列举出所有的实例对象，可以用来发现大内存对象`。
+
+##### Leak Superset
+
+通过 MAT 自动分析当前内存泄露的主要原因：
+
+<img src="051、动手实验：使用jmap和jhat摸清线上系统的对象分布.assets/image-20220406163012690.png" alt="image-20220406163012690" style="zoom:80%;" />
+
+
+
+具体参考：https://www.cnblogs.com/zh94/p/14051852.html
 
