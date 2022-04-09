@@ -81,7 +81,7 @@ Redis Sentinel 是 2.8 版本后推出的原生高可用解决方案，其部署
 
 1. redis加锁，本质上就是在redis集群中挑选一个master实例来加锁；
 
-2. 每一个master都挂载了一个slave实例，实现搞可用的机制，如果master宕机，slave就会自动切换为master。
+2. 每一个master都挂载了一个slave实例，实现高可用的机制，如果master宕机，slave就会自动切换为master。
 
 但是还是会有一个老生常谈的问题：
 

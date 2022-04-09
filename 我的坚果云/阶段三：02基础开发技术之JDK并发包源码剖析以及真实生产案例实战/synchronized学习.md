@@ -31,6 +31,14 @@ synchronized(MyObject.class) {
 
 其实synchronized的底层原理是跟jvm指令和monitor有关系的。
 
+synchronized同步基于的是monitor监视锁来实现的。
+
+`monitor相当于一个对象的钥匙，只有拿到该对象的monitor，才能访问对象的同步代码。`
+
+`相反未获得monitor的线程则只有阻塞等待已经获取到monitor的线程释放monitor。`
+
+`可以这样比喻，monitorenter和monitorexit分别相当于拿到对象锁和释放对象锁。`
+
 你如果用到了synchronized关键字，在底层编译后的指令中，会有monitorenter和monitorexit两个指令。
 
 ```
@@ -47,7 +55,7 @@ monitorexit执行
 
 - monitor里有一个计数器，是从0开始的；
 
-- 如果一个线程要获取monitor的锁，就看看他的计数器是不是0，如果是0的话，那么就说明还没有人获取锁，那么这个线程就可以获取锁了，然后对计数器加1。
+- `如果一个线程要获取monitor的锁，就看看他的计数器是不是0`，如果是0的话，那么就说明还没有人获取锁，那么这个线程就可以获取锁了，然后对计数器加1。
 
 - 这个monitor锁是支持重入加锁的，比如下面的代码：
 
@@ -62,11 +70,11 @@ monitorexit执行
 
   - 如果一个线程获取myObject对象的monitor锁，计数器会加1；
 - 然后第二次还是这个线程来获取myObject的锁，这个就是重入加锁了，计数器会再次加1，变成2。
-  - 这时候，其它线程在外层的synchronized那里，会发现myObject的monitor锁的计数器大于0，意味着别人已经加过锁了，然后此时该线程就会进入block阻塞状态，什么都干不了，就是等着获取锁。
+  - 这时候，其它线程在外层的synchronized那里，会发现myObject的monitor锁的计数器大于0，意味着别人已经加过锁了，然后**此时该线程就会进入block阻塞状态，什么都干不了，就是等着获取锁**。
   - 接着如果出了synchronized修改的代码片段范围，就会有一个monitorexit的指令，在底层，此时获取锁的线程就会对那个对象的monitor锁的计数器减1，如果有多次重入加锁，就多次减1，直到计数器为0。
   - 然后后边block的线程，会再次尝试获取锁，但是只有一个线程可以获取到锁。
   
-- wait和notify关键字的实现也是基于monitor实现的。有线程执行wait之后，自己会加入monitor的waitset中等待唤醒获取锁，motifyall操作会将monitor中的waitset重的所有线程都唤醒，让他们竞争去获取锁。
+- wait和notify关键字的实现也是基于monitor实现的。有线程执行wait之后，自己会加入monitor的waitset中等待唤醒获取锁，notifyall操作会将monitor中的waitset中的所有线程都唤醒，让他们竞争去获取锁。
 
 #### 实际使用场景
 
