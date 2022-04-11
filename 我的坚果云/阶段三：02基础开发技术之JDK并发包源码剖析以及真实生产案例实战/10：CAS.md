@@ -32,7 +32,7 @@ ublic final native boolean compareAndSwapInt(Object var1, long var2, int var4, i
 {CC "compareAndSetInt",   CC "(" OBJ "J""I""I"")Z",  FN_PTR(Unsafe_CompareAndSetInt)},
 ```
 
-这个涉及到 JNI的调用，搜索 `Unsafe_CompareAndSetInt`后发现:
+这个涉及到 JNI的调用，搜索 `Unsafe_CompareAndSetInt`后发现：
 
 ```c
 UNSAFE_ENTRY(jboolean, Unsafe_CompareAndSetInt(JNIEnv *env, jobject unsafe, jobject obj, jlong offset, jint e, jint x)) {
@@ -60,7 +60,7 @@ inline jint     Atomic::cmpxchg    (jint     exchange_value, volatile jint*     
 
 
 
-我们通过文件名可以知道，针对不同的操作系统,JVM 对于 Atomic::cmpxchg 应该有不同的实现。由于我们服务基本都是使用的是64位linux，所以我们就看看linux_x86 的实现。
+我们通过文件名可以知道，针对不同的操作系统 JVM 对于 Atomic::cmpxchg 应该有不同的实现。由于我们服务基本都是使用的是64位linux，所以我们就看看linux_x86 的实现。
 
 
 
