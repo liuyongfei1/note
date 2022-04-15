@@ -24,12 +24,30 @@
 首先第一个命令，就是在生产机器linux上（比如，看一下data-board的），找出Java进程的PID，用jps命令就可以看到：
 
 ```bash
-[root@b2a2d78cee83 ~]# /usr/java/default/bin/jps 
-35 resin.jar
-168 Resin
-96 WatchdogManager
-85183 Jps
+[root@1dd50aafa6e7 /usr/java/jdk1.7.0_79/bin]# ./jps                                                                                     
+24776 Jps
+160 Resin
+91 WatchdogManager
+30 resin.jar
 ```
+
+使用 ps aux | grep java
+
+![image-20220415105735682](050：动手实验：使用 jstat 摸清线上系统的JVM运行状况.assets/image-20220415105735682.png)
+
+-Xmx：堆内存的最大大小 2048MB
+
+-Xms：堆内存初始大小 2048MB
+
+-Xmn：新生代内存大小 512MB
+
+-XX:SurvivorRatio：新生代中 Eden区与两个Survivor区的比值，为6，则表 Eden：Survivor = 6：2。也就是**Eden区大小为 512 * 6/8 = 384MB，1个Survivor区大小为：512 * 1/8 = 64MB**。可以计算出老年代大小：堆内存大小 - 新生代大小 = 2048MB - 512MB = 1536MB。（**XX:NewRatio** 设置年轻代与老年代比例，默认为1:2）
+
+-Xss: 栈内存大小 1MB
+
+-XX:PermSize 永久代大小256MB
+
+-XX:MaxPermSize 永久代最大大小 256MB
 
 接着就针对我们的Java进程执行：jstat -gc PID
 
@@ -38,26 +56,26 @@
 运行这个命令之后就会看到如下列：
 
 ```bash
-[root@b2a2d78cee83 ~]# /usr/java/default/bin/jstat -gc 35                                                                            
- S0C    S1C    S0U    S1U      EC       EU        OC         OU       PC     PU    YGC     YGCT    FGC    FGCT     GCT   
-87040.0 87040.0  0.0   17175.3 525312.0 56734.3  1397760.0     8.0     21504.0 13246.4      1    0.241   0      0.000    0.241
+[root@b2a2d78cee83 ~]# /usr/java/default/bin/jstat -gc 160                                                                           
 ```
+
+![image-20220415095559955](050：动手实验：使用 jstat 摸清线上系统的JVM运行状况.assets/image-20220415095559955.png)
 
 解释一下参数：
 
-1. S0C：这是From Survivor区的大小；
-2. S1C：这是To Survivor区的大小；
+1. S0C：这是From Survivor区的大小；=》 64MB
+2. S1C：这是To Survivor区的大小；=》 64MB
 3. S0U：这是From Survivor区当前使用内存的大小；
-4. S1U：这是To Survivor区当前使用内存的大小；
-5. EC：这是Eden区的大小；
-6. EU：这是Eden区当前使用内存的大小；
-7. OC：这是老年代的大小；
-8. OU：这是老年代当前使用的内存大小；
+4. S1U：这是To Survivor区当前使用内存的大小；=》2.25MB
+5. `EC：这是Eden区的大小`；=》 384MB
+6. EU：这是Eden区当前使用内存的大小；=》 256MB
+7. OC：这是老年代的大小；=》1536MB
+8. OU：这是老年代当前使用的内存大小；=》108.9MB
 9. MC：这是方法区（永久代、元数据区）的大小；
 10. MU：这是方法区（永久代、元数据区）的当前使用的内存大小；
-11. YGC：这是系统运行迄今为止的Yong GC次数；
-12. YGCT：这是Yong GC的耗时；
-13. FGG：这是系统运行迄今为止的Full GC次数；
+11. YGC：这是系统运行迄今为止的Yong GC次数；=》859
+12. YGCT：这是所有Yong GC的耗时； 9.796 / 859 = 0.011s
+13. FGC：这是系统运行迄今为止的Full GC次数； =》 4
 14. FGCT：这是Full GC的耗时；
 15. GCT：这是所有GC的耗时。
 

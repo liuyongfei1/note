@@ -77,7 +77,7 @@ Started HTTP server on port 7000
 Server is ready.
 ```
 
-### 查看堆内存快船
+### 查看堆内存快照
 
 直接浏览器访问：http://localhost:7000/
 

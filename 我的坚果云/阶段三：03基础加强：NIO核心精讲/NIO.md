@@ -458,9 +458,37 @@ serverSocketChannel.accept();这里。如果又感知到客户端又给你发送
 本次 Chat 的主要内容（链接：https://blog.csdn.net/valada/article/details/96040288）：
 
 1. 什么是BIO、NIO、AIO 各自的原理；
+   AIO现在用的比较少，用的比较多的还是NIO。
+
+   AIO的网络通信原理与NIO基本是一样的，不一样的地方就是工作线程读取数据的时候，是说你提供给操作系统一个buffer，空的，然后你就可以干别的事儿了，你就把读取数据的事儿交给操作系统内核去干，操作系统内核读取到数据将数据放入buffer中，`然后回调你的一个接口`，告诉你说，ok，buffer交给你了，这个数据我给你读好了。
+   https://apppukyptrl1086.pc.xiaoe-tech.com/detail/v_5e440e1daaefe_QvMnpQeT/3?from=p_5dd3ccd673073_9LnpmMju&type=6&parent_pro_id=
+
 2. 什么是同步阻塞、同步非阻塞、异步非阻塞；
+
+   
+
 3. 多路复用机制是什么；
+
 4. NIO 相关组件的含义理解。
+
+#### BIO同步阻塞
+
+https://apppukyptrl1086.pc.xiaoe-tech.com/detail/v_5e440e1daaefe_QvMnpQeT/3?from=p_5dd3ccd673073_9LnpmMju&type=6&parent_pro_id=
+为什么BIO是同步阻塞呢？这里其实不是针对网络编程模型来说的，而是针对文件IO操作来说的，因为用BIO的流读写文件，是说你发起个IO请求后，会被直接卡死，必须等着处理完这次IO才能返回。
+
+#### NIO同步非阻塞
+
+`就是说通过NIO的FileChannel发起这个文件IO操作，其实发起之后就返回了，你可以干别的事儿了，这就是非阻塞。`
+
+`为什么叫同步呢？就是说你在干其它事儿的同时，还得时不时的去主动问操作系统，数据处理好了没 （你还得不断的去轮询操作系统读取数据的状态，看看人家读好了没有。）`
+
+#### AIO异步非阻塞
+
+你也可以基于AIO的文件读写api去读写磁盘文件，你发起一个文件读写的操作之后，你就不用管他了，直到操作系统自己完成之后，会来回调你的一个接口，通知你说：ok，这个数据读完了。
+
+--------------------------------------------
+
+
 
 你的收获：
 
