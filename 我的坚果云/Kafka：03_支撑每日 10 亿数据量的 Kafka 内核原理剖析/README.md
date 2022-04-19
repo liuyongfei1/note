@@ -35,17 +35,59 @@ kafka这个实战课程分为哪几个环节的步骤去讲：
 
 ### Kafka高吞吐低延迟是怎么做到的
 
-<img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />Kafka低延迟高吞吐原理分析(非零拷贝)
-
-![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝)-8728987.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)
-
 <img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />
 
 
 
-Kafka低延迟高吞吐原理分析(零拷贝)
+2、Kafka低延迟高吞吐原理分析(非零拷贝)
+
+
+
+![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝)-8728987.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)
+
+3、Kafka低延迟高吞吐原理分析(零拷贝)
 
 ![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝)-8729065.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
+
+零拷贝并不是不需要拷贝，而是减少拷贝次数。通常是说在IO读写过程中。
+
+传统的IO流程，比如读取文件，再通过socket发送出去，传统方式实现：
+
+1、从磁盘中读取文件，读取到操作系统内核缓冲区；
+
+2、将操作系统内核缓冲区的数据拷贝到 application应用程序的buffer里；
+
+3、将应用程序的buffer拷贝到socket网络发送缓冲区；
+
+4、将socket buffer 的数据，拷贝到网卡，由网卡进行网络传输。
+
+可以看到，传统方式，读取磁盘文件再到进行网络发送，经历过的四次数据拷贝是非常繁琐的，需要CPU上下文切换。
+
+kafka将这个过程简化为两步了：
+
+1、网络数据持久化到磁盘；（Producer 到 Broker）
+
+2、磁盘文件通过网络发送（Broker到 Consumer）
+
+
+
+结论：
+
+https://www.jianshu.com/p/7863667d5fa7
+
+1、顺序写，顺序读；
+
+kafka将来自Prodcuer的数据，顺序写入 partition，partition就是一个文件，以此实现顺序写入；
+
+Consumer从broker消费数据时，因为自带了偏移量，接着上次读取的位置继续读，以此实现顺序读。
+
+2、零拷贝sendfile（in，out）；
+
+数据直接在内核完成输入输出，不需要拷贝到用户空间再写出去；
+
+3、mmap文件映射
+
+简单描述其作用：将磁盘文件映射到内存，用户通过修改内存就能修改磁盘文件。它的工作原理是直接利用操作系统的Page来实现文件到物理内存的映射。完成映射之后你对物理内存的操作就会被同步到磁盘上。（操作系统在适当的时候）。
 
 
 
@@ -71,7 +113,7 @@ Kafka是直接通过NIO的ByteBuffer以二进制的方式来保存消息的。
 
 多副本冗余机制，在partiiton里会选举出来一个leader，一个follower。
 
-### 如何保证写入Kafaka的数据不丢失呢？
+### 如何保证写入Kafka的数据不丢失呢？
 
 如果写入的数据还没来得及向副本里同步的时候，所在的机器就宕机了。
 
@@ -81,9 +123,9 @@ Kafka是直接通过NIO的ByteBuffer以二进制的方式来保存消息的。
 
 怎么解决？引入ISR机制。in sync replica，就是跟leader partition保持同步的follower partition的数量。
 
-只有处于ISR列表中的follower的才可以在leader宕机之后被选举为行的leader，因为这个ISR列表里代表他的数据跟leader是同步的。
+只有处于ISR列表中的follower的才可以在leader宕机之后被选举为新的leader，因为这个ISR列表里代表他的数据跟leader是同步的。
 
-Kafka会自动维护这个ISR列表，代表有哪个follower的数据跟leader是同步的。起码ISR列表里有一个，这时写数据才会写成功。如果ISR列表里连一个follower也没有，这时就不允许写。
+Kafka会自动维护这个ISR列表，代表有哪个follower的数据跟leader是同步的。起码ISR列表里有一个，这时写数据才会写成功。`如果ISR列表里连一个follower也没有，这时就不允许写。`
 
 这样的话，只要你写成功了一条数据，就保证数据不会丢了。
 
@@ -138,7 +180,15 @@ Kafka的通信主要发生在 生产端和broker之间，broker和消费端之�
 
 每个broker上都有一个 acceptor 线程和 很多个 processor 线程。可以用 num.network.threads 参数设置 processor 线程的数量，默认是3，client 跟一个broker 之间只会创建一个 socket 长连接，会复用。
 
+Kafka 使用的是 Reactor 模式。特别适合应用与处理多个客户端并发向服务端发送请求的场景。
+
 <img src="README.assets/Kafka Broker基于Reactor模式进行多路复用请求处理.png" alt="Kafka Broker基于Reactor模式进行多路复用请求处理" style="zoom:80%;" />
+
+
+
+acceptor线程只用于请求分发，不涉及具体的逻辑处理，非常轻量级，因此具有很高的吞吐量表现。
+
+
 
 ### 如何对Kafka集群进行整体控制？Controller是个什么东西？
 
@@ -319,6 +369,8 @@ producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会
 
 <img src="README.assets/Kafka Producer发送消息的内部实现原理.png" alt="Kafka Producer发送消息的内部实现原理" style="zoom:80%;" />
 
+
+
 ### Kafka基于Consumer Group的消费者组
 
 每个consumer都要属于一个consumer.group，就是一个消费组。
@@ -360,6 +412,8 @@ coordinator 能感知到 group 里的 consumer 发生了变化，会进行 rebal
 ### Coordinator和Consumer leader如何协作制定分区方案
 
 <img src="README.assets/Coordinator和Consumer Leader如何协作制定分区方案-3657349.png" alt="Coordinator和Consumer Leader如何协作制定分区方案" style="zoom:80%;" />
+
+
 
 ### rebalance的三种策略分别有哪些优劣势
 

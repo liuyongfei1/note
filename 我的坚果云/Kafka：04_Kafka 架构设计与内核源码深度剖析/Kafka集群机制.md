@@ -10,7 +10,7 @@ Zookeeper 是分布式系统中基石型组件。大数据本身是分布式系�
 
 基于均匀分配的算法，将副本均匀分配给各个Broker。
 
-Controller会注册针对节点 "broker/topics" 的监听
+Controller会注册针对节点 "broker/topics" 的监听。
 
 #### 扩容Kafka集群时如何触发副本重平衡
 

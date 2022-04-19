@@ -24,7 +24,11 @@ maxBlockTimeMs参数，决定了你调用send()方法的时候，最多会被阻
 
 ![客户端拉取Topic元数据是怎么按需加载的呢？](Producer-网络通信.assets/客户端拉取Topic元数据是怎么按需加载的呢？.png)
 
+
+
 ![Producer发送消息时元数据加载过程](Producer-网络通信.assets/Producer发送消息时元数据加载过程.png)
+
+
 
 wait()方法释放锁，然后进入一个休眠等待再次被人唤醒后获取锁的状态；
 
@@ -159,6 +163,8 @@ availableMemory 剩余的可利用的空间大小。
 
 ![Producer发送消息将消息放入内存缓冲-double check](Producer-网络通信.assets/Producer发送消息将消息放入内存缓冲-double check.png)
 
+
+
 其中一个线程构造了一个batch放到Dequeue里去，另外两个线程通过double check的机制就可以直接往batch里写了。那么此时这两个线程申请的ByteBuffer就没用了，就会还到BufferPool里去。
 
 avaliableMemory = 32mb - 16KB * 3。
@@ -219,7 +225,9 @@ IO线程一启动，Sender里面的业务逻辑就会执行。
 
 
 
-这里先默认走到这里时，已经拉取到了topic对应的元数据信息缓存到了客户端：topic->partition->leader/follower + isr。
+这里先默认走到这里时，已经拉取到了topic对应的元数据信息缓存到了客户端：
+
+topic->partition->leader/follower + isr。
 
 #### 2.2 Sender的run()方法
 
