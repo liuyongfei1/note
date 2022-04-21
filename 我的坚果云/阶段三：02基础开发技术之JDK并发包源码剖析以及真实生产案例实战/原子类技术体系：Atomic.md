@@ -42,7 +42,7 @@ Atomic一些列的类可以来优化加锁的性能。
 
 ### Atomic原理图
 
-<img src="原子类技术体系：AutomicInteger.assets/Atomic原理.png" alt="Atomic原理" style="zoom:50%;" />
+<img src="原子类技术体系：Atomic.assets/Atomic原理.png" alt="Atomic原理" style="zoom:80%;" />
 
 Atomic原子类体系的底层核心的原理是CAS。Compare And Set。
 

@@ -68,6 +68,3 @@ setExclusiveOwnerThread(Thread.currentThread());
 ```
 
 设置当前线程自己是 加了一个独占锁的线程，标识出来自己是加锁的线程。
-
-
-

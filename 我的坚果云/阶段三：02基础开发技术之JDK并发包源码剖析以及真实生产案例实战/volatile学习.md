@@ -155,7 +155,9 @@ public class DoubleCheckSingleton {
 synchronized能保证原子性，所以本身也能保证可见性。这里的缺陷主要还是 指令重排的问题：
 
 - 给 instance 加锁 volatile 关键字后，会解决指令重排的问题。前后的读写操作，就会保证一定的顺序。
-- 对加了volatile的这个变量，只有都写成功了之后呢，才会允许其它的线程来读。不会说一个写还没全部执行结束完毕就自动让另一个先来执行读了。
+- 对加了`volatile`的这个变量，只有都写成功了之后呢，才会允许其它的线程来读。不会说一个写还没全部执行结束完毕就自动让另一个先来执行读了。
+
+可以见 /Users/lyf/Workspace/www/blog-demo/thread-demo/src/main/java/volatiledemo/Singleton.java
 
 底层的细节，会有很多jvm指令，没必要深扣。
 
