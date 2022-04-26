@@ -66,3 +66,6 @@ get的时候，大概的流程是这样：
 
 requestId.get() -> Thread.ThreadLocalMap -> ThreadLocal(requestId) -> 1L。
 
+关于 ThreadLocal 的使用场景：
+
+https://blog.csdn.net/yongbutingxide/article/details/122204811/

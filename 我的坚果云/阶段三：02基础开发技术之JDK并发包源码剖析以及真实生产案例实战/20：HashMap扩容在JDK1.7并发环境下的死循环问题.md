@@ -92,9 +92,53 @@ void transfer(Entry[] newTable){
 }
 ```
 
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421213229709.png" alt="image-20220421213229709" style="zoom:50%;" />
+
+
+
 #### 正常的rehash过程
 
+单个线程时的rehash过程：
+
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421221617069.png" alt="image-20220421221617069" style="zoom:50%;" />
+
+
+
+rehash后：<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421221749468.png" alt="image-20220421221749468" style="zoom:50%;" />
+
+
+
+两个线程时，执行情况会比较复杂，这里演示出来，可能导致死循环的这种情况：
+
+线程1执行完（线程在卡在 if(rehash)这里）后的扩容数组的情况如下：
+
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421222317811.png" alt="image-20220421222317811" style="zoom:50%;" />
+
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421222416785.png" alt="image-20220421222416785" style="zoom:50%;" />
+
+e2和next2的指向情况没有发生变化，所以应该是这样：
+
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421222823115.png" alt="image-20220421222823115" style="zoom:50%;" />
+
+
+
+线程2：
+
+这时候线程2唤醒了，
+
+<img src="20：HashMap在JDK1.7并发环境下的死循环问题.assets/image-20220421223409621.png" alt="image-20220421223409621" style="zoom:50%;" />
+
+就产生了循环链表。
+
+归根结底：`JDK1.7头插法` 形成的死循环。
+
+-------------------------------------------------
+
+
+
 <img src="Untitled.assets/HashMap-JDK1-正常rehash过程.png" alt="HashMap-JDK1-正常rehash过程" style="zoom:80%;" />
+
+
 
 #### 多线程并发时的Rehash
 

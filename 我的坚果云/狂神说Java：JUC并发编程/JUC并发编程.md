@@ -16,7 +16,7 @@ Java默认有两个线程，一个是main线程，一个是GC线程。
 
 线程：比如使用这个Typora这个软件，会有一个线程负责输入文字，还会有一个线程负责自动保存文字。
 
-Java中通过Threa、Runnable、Callable去使用线程。
+Java中通过Thread、Runnable、Callable去使用线程。
 
 > 并发并行
 
@@ -106,7 +106,7 @@ Lock锁是一个接口，它的实现类是：
 
 >  Synchronized和Lock区别
 
-1、Synchronized 内部的java关键字，Lock是一个java类；
+1、Synchronized 是内部的java关键字，Lock是一个java类；
 
 2、Synchronized无法获取锁的状态，Lock可以判断是否获取到了锁；
 
@@ -521,7 +521,7 @@ B=>BBBBBBB
 C=>CCCCCC
 ```
 
-可以看到，达到我们想要的结果。Condition可以精确的通知和唤醒线程
+可以看到，达到我们想要的结果。`Condition可以精确的通知和唤醒线程。`
 
 https://www.bilibili.com/video/BV1B7411L7tE?p=13&spm_id_from=pageDriver
 
@@ -1498,7 +1498,7 @@ https://www.bilibili.com/video/BV1B7411L7tE?p=16&spm_id_from=pageDriver
 public class ReadWriteLockDemo {
 
     public static void main(String[] args) {
-        MyCache myCache = new MyCache ();
+        MyCache myCache = new MyCache();
 
         // 启动5个线程，同时向cache中写入数据
         for (int i = 1; i <= 5 ; i++) {

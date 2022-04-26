@@ -1,5 +1,9 @@
 ## LinkedBlockingQueue
 
+可以设置大小；
+
+也可以不设置大小，默认就是 Integer.MAX_VALUE
+
 ### 源码分析
 
 参考文章：https://blog.csdn.net/tonywu1992/article/details/83419448
@@ -62,13 +66,13 @@ private final Condition notFull = putLock.newCondition();
 从上面的属性我们可以看出：
 
 - 与ArrayBlockingQueue不同的是，LinkedBlockingQueue内部分别使用了takeLock和putLock两把锁对并发进行控制，也就是说，**添加和删除操作并不是互斥操作，可以同时进行，这样可以大大提高吞吐量**。
-- 如果不指定容量的大小，则默认为Integer.MAX_VALUE，如果存在速度大于删除速度的时候，有可能会内存溢出。这一点在使用之前要慎重考虑。
+- 如果不指定容量的大小，则默认为Integer.MAX_VALUE，如果添加速度大于删除速度的时候，有可能会内存溢出。这一点在使用之前要慎重考虑。
 - 对每一个lock锁都使用了Condition用来挂起和唤醒其它线程。
 
 备注：
 
-- Condition是在jdk 1.5中出现的，它用来替代传统的Object的wait(),notify()实现线程间的协作。
-- 相比较Object的wait(),notify()，使用Condition的await(),signal()这种方式实现线程间的协作更加安全和高效。
+- Condition是在jdk 1.5中出现的，它用来替代传统的Object的wait()，notify()实现线程间的协作。
+- 相比较Object的wait(),notify()，使用Condition的await()，signal()这种方式实现线程间的协作更加安全和高效。
 - Condition是个接口，基本的方法就是await()和signal()方法。
 
 #### 2.Put方法

@@ -180,13 +180,15 @@ Kafka的通信主要发生在 生产端和broker之间，broker和消费端之�
 
 每个broker上都有一个 acceptor 线程和 很多个 processor 线程。可以用 num.network.threads 参数设置 processor 线程的数量，默认是3，client 跟一个broker 之间只会创建一个 socket 长连接，会复用。
 
-Kafka 使用的是 Reactor 模式。特别适合应用与处理多个客户端并发向服务端发送请求的场景。
+Kafka 使用的是 Reactor 模式。特别适合应用与**处理多个客户端并发向服务端发送请求**的场景。
 
 <img src="README.assets/Kafka Broker基于Reactor模式进行多路复用请求处理.png" alt="Kafka Broker基于Reactor模式进行多路复用请求处理" style="zoom:80%;" />
 
 
 
-acceptor线程只用于请求分发，不涉及具体的逻辑处理，非常轻量级，因此具有很高的吞吐量表现。
+
+
+**acceptor线程只用于请求分发，不涉及具体的逻辑处理，非常轻量级，因此具有很高的吞吐量表现。**
 
 
 

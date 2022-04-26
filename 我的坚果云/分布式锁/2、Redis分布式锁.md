@@ -77,6 +77,81 @@ Redis Sentinel 是 2.8 版本后推出的原生高可用解决方案，其部署
 
 获取了一个分布式操作之后，就对某个共享的数据获取了一定时间范围内的独享操作。
 
+#### 使用setnx分布式锁的注意点
+
+http://news.sohu.com/a/535960528_121124377
+
+20220425日补充：
+
+死锁的两个场景：
+
+1. 有可能客户端a加完锁，执行业务逻辑，还没来得及释放锁呢，结果客户端挂了，这时别的客户端就一直加不上锁，就会造成了死锁；=》解决办法是，设置 expire 过期时间。
+2. 客户端a加完锁，但同样还还有这个问题，加锁成功了，但是设置 exprie的时候，客户端挂掉了。
+
+解决办法，将 setnx 和 expire 这两个操作放在一个 原子操作里：
+
+1. 比如，使用lua脚本：
+
+```lua
+public boolean tryLock_with_lua(String key, String UniqueId, int seconds) 
+	{ String lua_scripts = "if redis.call('setnx',KEYS[1],ARGV[1]) == 1 then" + "redis.call('expire',KEYS[1],ARGV[2]) return 1 else return 0 end"; List keys = new ArrayList<>(); List values = new ArrayList<>(); keys.add(key); values.add(UniqueId); values.add(String.valueOf(seconds)); Object result = jedis.eval(lua_scripts, keys, values); 
+ //判断是否成功 return result.equals(1L);}
+```
+
+2. **直接使用 set(key,value,NX,EX,timeout) 指令，同时设置锁和超时时间**
+
+   redis.call(" SET", "lock", "true", "NX ", "PX ", "10000")
+
+3. 释放锁的脚本两种方式都是一样的，直接调用 Redis 的 del 指令即可。
+
+这样就完美了吗？
+
+**假设有这样一种情况，如果一个持有锁的应用，其持有锁的时间超过了我们设定的超时时间，会怎么样呢？**
+
+会出现两种情况：
+
+- 发现系统在redis中设置的key 不存在了；
+- 发现系统在redis中设置的key 还存在；
+
+ 出现第一种情况比较正常了，因为毕竟你执行任务超时了，key被正常清除也是符合逻辑的；
+
+出现第二种情况，发现设置的key还存在，这说明了什么？`说明当前存在的key，是另外的应用设置的。`
+
+`这时候如果持有锁超时的应用执行del 指令去删除时，就会把别人设置的锁误删除，这就会直接导致系统出现问题。`
+
+所以为了解决这个问题，需要对redis脚本进行改动：
+
+1. 首先，在获取锁的时候，去设置一个只有应用自己知道的独一无二的值；
+
+   ```lua
+   if redis.call( "SETNX", "lock", ARGV[ 1]) == 1 then 
+     local expireResult = redis.call( "expire", "lock", "10") 
+     if expireResult == 1 then return "success" 
+      else return "expire failed" 
+     end 
+   else return "setnx not null" end
+   ```
+
+   或
+
+   ```bash
+   redis.call(" SET", "lock", ARGV[1], "NX ", "PX ", "10000")
+   ```
+
+   这里，ARGV[1] 是一个可传入的参数变量，可以传入唯一值。比如一个只有自己知道的 UUID 的值，或者通过雪球算法，生成只有自己持有的唯一 ID。
+
+2. 释放锁的脚本改成这样：
+
+   ```lua
+   if redis.call( "get", "lock") == ARGV[ 1] then 
+   return redis.call( "del", "lock") 
+   else return 0 end
+   ```
+
+   
+
+听起来有点复杂，但是实际中我们可以使用已经封装好的框架，比如 **redisson**，使用 lock  和unlock 就行了。
+
 #### redisson分布式锁的隐患
 
 1. redis加锁，本质上就是在redis集群中挑选一个master实例来加锁；
@@ -91,7 +166,9 @@ Redis Sentinel 是 2.8 版本后推出的原生高可用解决方案，其部署
 
 这时就会出现两个客户端，都会获取同一把分布式锁，可能有的时候就会导致一些数据的问题。
 
-redisson的分布式锁，隐患主要就在这里。
+`redisson的分布式锁，隐患主要就在这里。`
+
+
 
 ### MultiLock锁
 

@@ -224,7 +224,7 @@ uncaughtException方法： **public void uncaughtException(Thread t, Throwable e
 
 方式二：通过方法：**public void setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler eh)**
 
-(4) UncaughtExceptionHandler异常处理需要设置在run()方法内，否则无法捕获到线程的异常。
+(4) UncaughtExceptionHandler 异常处理需要设置在run()方法内，否则无法捕获到线程的异常。
 
 参考链接：https://www.cnblogs.com/xiaoxing/p/6230056.html
 
