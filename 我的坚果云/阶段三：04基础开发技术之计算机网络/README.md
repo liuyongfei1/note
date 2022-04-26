@@ -38,8 +38,6 @@ TCP的连接建立和关闭，都是通过请求-响应的模式完成。
 
 ![TCP三次握手](README.assets/TCP三次握手.png)
 
-
-
 讲的比较好的文章：https://baijiahao.baidu.com/s?id=1654225744653405133&wfr=spider&for=pc
 
 ##### 为什么需要三次握手
@@ -53,6 +51,8 @@ SYN是**请求连接标志**， 表示同意建立连接请求；ACK是**确认�
 #### TCP四次挥手
 
 <img src="README.assets/TCP四次挥手.png" alt="TCP四次挥手" style="zoom:80%;" />
+
+
 
 - 第一次握手：客户端打算关闭连接的时候，会发送 FIN报文告诉服务端我要关闭连接了，之后客户端就会处于一个 WAIT_1 状态；
 
