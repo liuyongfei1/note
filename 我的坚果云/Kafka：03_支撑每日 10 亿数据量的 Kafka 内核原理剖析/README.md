@@ -184,10 +184,6 @@ Kafka 使用的是 Reactor 模式。特别适合应用与**处理多个客户端
 
 <img src="README.assets/Kafka Broker基于Reactor模式进行多路复用请求处理.png" alt="Kafka Broker基于Reactor模式进行多路复用请求处理" style="zoom:80%;" />
 
-
-
-
-
 **acceptor线程只用于请求分发，不涉及具体的逻辑处理，非常轻量级，因此具有很高的吞吐量表现。**
 
 
