@@ -35,9 +35,9 @@ kafka这个实战课程分为哪几个环节的步骤去讲：
 
 ### Kafka高吞吐低延迟是怎么做到的
 
+磁盘顺序写+MMap+零拷贝+OS Cache的持久化机制
+
 <img src="README.assets/Kafka低延迟高吞吐原理分析.png" alt="Kafka低延迟高吞吐原理分析" style="zoom:80%;" />
-
-
 
 2、Kafka低延迟高吞吐原理分析(非零拷贝)
 
@@ -45,9 +45,13 @@ kafka这个实战课程分为哪几个环节的步骤去讲：
 
 ![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(非零拷贝)-8728987.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(非零拷贝).png)
 
+
+
 3、Kafka低延迟高吞吐原理分析(零拷贝)
 
 ![Kafka低延迟高吞吐原理分析(README.assets/Kafka低延迟高吞吐原理分析(零拷贝)-8729065.png)](../../../自己画的流程图/Kafka/Kafka低延迟高吞吐原理分析(零拷贝).png)
+
+
 
 零拷贝并不是不需要拷贝，而是减少拷贝次数。通常是说在IO读写过程中。
 
@@ -367,8 +371,6 @@ producer.send(key,msg); // 用这种方式，比如订单id/用户id做key，会
 
 <img src="README.assets/Kafka Producer发送消息的内部实现原理.png" alt="Kafka Producer发送消息的内部实现原理" style="zoom:80%;" />
 
-
-
 ### Kafka基于Consumer Group的消费者组
 
 每个consumer都要属于一个consumer.group，就是一个消费组。
@@ -410,8 +412,6 @@ coordinator 能感知到 group 里的 consumer 发生了变化，会进行 rebal
 ### Coordinator和Consumer leader如何协作制定分区方案
 
 <img src="README.assets/Coordinator和Consumer Leader如何协作制定分区方案-3657349.png" alt="Coordinator和Consumer Leader如何协作制定分区方案" style="zoom:80%;" />
-
-
 
 ### rebalance的三种策略分别有哪些优劣势
 
