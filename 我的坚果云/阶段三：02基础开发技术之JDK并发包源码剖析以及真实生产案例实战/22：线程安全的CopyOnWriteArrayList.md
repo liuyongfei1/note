@@ -1,6 +1,6 @@
 ## CopyOnWriteArrayList
 
-CopyOnWriteArrayList，写时复制机制的ArrayList。可以保证线程并发的安全性。
+CopyOnWriteArrayList，写时复制机制的ArrayList。**可以保证线程并发的安全性**。
 
 ### 源码分析
 
@@ -27,10 +27,16 @@ CopyOnWriteArrayList，写时复制机制的ArrayList。可以保证线程并发
 
 3. 每个CopyOnWriteArrayList底层除了对应一个Object[]外，还对应一个ReentrantLock独占锁。独占锁保证了只有一个线程可以获取到锁，修改底层数组里的数据。
 
-4. 增删改查操作的时候，都必须先获取一把ReentrantLock独占锁，保证同一时间只可以有一个线程操作底层的数组。
+4. 增删改操作的时候，都必须先获取一把ReentrantLock独占锁，保证同一时间只可以有一个线程操作底层的数组。
 
   
 
 ### 总结
+
+https://www.bilibili.com/video/BV1zb411M7NQ?p=21&spm_id_from=pageDriver
+
+![image-20220504101540888](22：线程安全的CopyOnWriteArrayList.assets/image-20220504101540888.png)
+
+可以对 CopyOnWrite 容器并发的读，而不需要加锁。
 
 并发写CopyOnWriteArrayList的性能是比较差的，基本上所有的线程都要串行起来写，一个线程先写完，下一个线程才能写。
